@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
@@ -7,6 +7,12 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
+import { Toaster } from "@/components/ui/sonner";
+import { AuthContext } from "@/hooks/use-auth";
+import type { AppRole, AuthState } from "@/lib/auth-context";
 
 import appCss from "../styles.css?url";
 
@@ -67,19 +73,28 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+export const Route = createRootRouteWithContext<{
+  queryClient: QueryClient;
+  auth: AuthState;
+}>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Coopecur 2.0 — Plataforma de Servicios" },
+      {
+        name: "description",
+        content:
+          "Plataforma de gestión de servicios públicos de Coopecur: facturación, suministros y reclamos en línea.",
+      },
+      { name: "author", content: "Coopecur" },
+      { property: "og:title", content: "Coopecur 2.0" },
+      {
+        property: "og:description",
+        content: "Gestión integral de servicios públicos para socios y operadores.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -113,7 +128,73 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <AuthGate />
+      <Toaster richColors closeButton position="top-right" />
     </QueryClientProvider>
+  );
+}
+
+function AuthGate() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [session, setSession] = useState<Session | null>(null);
+  const [roles, setRoles] = useState<AppRole[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadRoles = useCallback(async (userId: string | undefined) => {
+    if (!userId) {
+      setRoles([]);
+      return;
+    }
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    setRoles((data ?? []).map((r) => r.role as AppRole));
+  }, []);
+
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      // defer to avoid recursive deadlocks inside the listener
+      setTimeout(() => {
+        void loadRoles(newSession?.user?.id);
+        router.invalidate();
+        queryClient.invalidateQueries();
+      }, 0);
+    });
+
+    void supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      void loadRoles(data.session?.user?.id).finally(() => setIsLoading(false));
+    });
+
+    return () => sub.subscription.unsubscribe();
+  }, [loadRoles, router, queryClient]);
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut();
+  }, []);
+
+  const auth: AuthState = useMemo(() => {
+    const hasRole = (r: AppRole) => roles.includes(r);
+    const hasAnyRole = (rs: AppRole[]) => rs.some((r) => roles.includes(r));
+    return {
+      user: session?.user ?? null,
+      session,
+      roles,
+      isAuthenticated: !!session?.user,
+      isLoading,
+      hasRole,
+      hasAnyRole,
+      isAdminOrOperator: hasAnyRole(["admin", "operator"]),
+      signOut,
+    };
+  }, [session, roles, isLoading, signOut]);
+
+  return (
+    <AuthContext.Provider value={auth}>
+      <Outlet />
+    </AuthContext.Provider>
   );
 }
