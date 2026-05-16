@@ -3,7 +3,9 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { ClientPortalLayout } from "@/components/layouts/client-portal-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Wallet, FileWarning, Wrench, BellRing } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Wallet, FileWarning, Wrench, Droplets, Flame, Zap, Gauge, Loader2 } from "lucide-react";
+import { useMyPadron } from "@/hooks/use-padron";
 
 export const Route = createFileRoute("/_authenticated/cliente")({
   head: () => ({ meta: [{ title: "Mi cuenta — Coopecur 2.0" }] }),
@@ -13,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/cliente")({
 function ClientPortal() {
   const auth = useAuth();
   const navigate = useNavigate();
+  const { data, isLoading } = useMyPadron();
 
   useEffect(() => {
     if (auth.isAdminOrOperator && !auth.hasRole("client")) {
@@ -20,24 +23,65 @@ function ClientPortal() {
     }
   }, [auth, navigate]);
 
+  const supplies = data?.supplies ?? [];
+
   return (
     <ClientPortalLayout>
       <div className="space-y-6">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Oficina Virtual</p>
-          <h1 className="text-2xl font-semibold tracking-tight">Hola, {auth.user?.email?.split("@")[0] ?? "socio/a"}</h1>
-          <p className="text-sm text-muted-foreground">Bienvenido/a a su panel personal de Coopecur 2.0.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Hola, {data?.member?.full_name?.split(" ")[0] ?? auth.user?.email?.split("@")[0] ?? "socio/a"}</h1>
+          <p className="text-sm text-muted-foreground">
+            {data?.member ? `Socio N° ${data.member.member_number}` : "Bienvenido/a a su panel personal de Coopecur 2.0."}
+          </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Kpi icon={<Wallet className="h-4 w-4" />} label="Saldo deudor" hint="Fase 3" />
           <Kpi icon={<FileWarning className="h-4 w-4" />} label="Facturas pendientes" hint="Fase 3" />
           <Kpi icon={<Wrench className="h-4 w-4" />} label="Reclamos activos" hint="Fase 4" />
-          <Kpi icon={<BellRing className="h-4 w-4" />} label="Suministros" hint="Fase 2" />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Suministros</CardTitle>
+              <Gauge className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-semibold">{supplies.length}</div>
+              <p className="mt-1 text-xs text-muted-foreground">activos / totales</p>
+            </CardContent>
+          </Card>
         </div>
+
         <Card>
-          <CardHeader><CardTitle className="text-base">Estado de Coopecur 2.0</CardTitle></CardHeader>
-          <CardContent className="text-sm text-muted-foreground">
-            La plataforma se está implementando por fases. Los módulos de suministros, facturación y reclamos se habilitarán en las próximas actualizaciones.
+          <CardHeader><CardTitle className="text-base">Mis suministros</CardTitle></CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            ) : !data?.member ? (
+              <p className="text-sm text-muted-foreground">Tu cuenta aún no está vinculada a un socio. Contactá a la cooperativa para asociar tu padrón.</p>
+            ) : supplies.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No tenés suministros registrados.</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {supplies.map((s: any) => (
+                  <div key={s.id} className="rounded-lg border p-4">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="gap-1">
+                        {s.service_type === "water" ? <Droplets className="h-3 w-3" /> : s.service_type === "gas" ? <Flame className="h-3 w-3" /> : <Zap className="h-3 w-3" />}
+                        {s.service_type}
+                      </Badge>
+                      <Badge variant={s.status === "active" ? "default" : s.status === "suspended" ? "destructive" : "secondary"}>{s.status}</Badge>
+                    </div>
+                    <p className="mt-2 font-mono text-xs text-muted-foreground">N° {s.supply_number}</p>
+                    {s.address && (
+                      <p className="mt-1 text-sm">{s.address.street} {s.address.street_number ?? ""}, {s.address.city}</p>
+                    )}
+                    {s.meters?.length > 0 && (
+                      <p className="mt-2 text-xs text-muted-foreground">Medidor: {s.meters[0].serial_number}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

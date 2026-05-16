@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, LayoutDashboard, LogOut, Receipt, ShieldCheck, Users, Wrench } from "lucide-react";
+import { Building2, Gauge, LayoutDashboard, LogOut, Receipt, ShieldCheck, Users, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,8 @@ export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
   const NAV: Array<{ label: string; icon: any; to?: string; enabled: boolean; adminOnly?: boolean }> = [
     { label: "Dashboard", icon: LayoutDashboard, to: "/admin", enabled: true },
     { label: "Usuarios y Roles", icon: ShieldCheck, to: "/admin/usuarios", enabled: true, adminOnly: true },
-    { label: "Padrones", icon: Users, enabled: false },
+    { label: "Socios", icon: Users, to: "/admin/socios", enabled: true },
+    { label: "Suministros", icon: Gauge, to: "/admin/suministros", enabled: true },
     { label: "Facturación", icon: Receipt, enabled: false },
     { label: "Despacho", icon: Wrench, enabled: false },
   ];
