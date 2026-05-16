@@ -14,6 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
+      members: {
+        Row: {
+          created_at: string
+          document_id: string | null
+          email: string | null
+          full_name: string
+          id: string
+          member_number: string
+          notes: string | null
+          phone: string | null
+          status: Database["public"]["Enums"]["member_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_id?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          member_number: string
+          notes?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["member_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_id?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          member_number?: string
+          notes?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["member_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      meters: {
+        Row: {
+          brand: string | null
+          created_at: string
+          id: string
+          installed_at: string | null
+          model: string | null
+          notes: string | null
+          serial_number: string
+          status: Database["public"]["Enums"]["meter_status"]
+          supply_id: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          installed_at?: string | null
+          model?: string | null
+          notes?: string | null
+          serial_number: string
+          status?: Database["public"]["Enums"]["meter_status"]
+          supply_id: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          installed_at?: string | null
+          model?: string | null
+          notes?: string | null
+          serial_number?: string
+          status?: Database["public"]["Enums"]["meter_status"]
+          supply_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meters_supply_id_fkey"
+            columns: ["supply_id"]
+            isOneToOne: false
+            referencedRelation: "supplies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -40,6 +129,102 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      supplies: {
+        Row: {
+          activated_at: string | null
+          address_id: string
+          created_at: string
+          id: string
+          member_id: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          status: Database["public"]["Enums"]["supply_status"]
+          supply_number: string
+          tariff_category: string | null
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          address_id: string
+          created_at?: string
+          id?: string
+          member_id: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          status?: Database["public"]["Enums"]["supply_status"]
+          supply_number: string
+          tariff_category?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          address_id?: string
+          created_at?: string
+          id?: string
+          member_id?: string
+          service_type?: Database["public"]["Enums"]["service_type"]
+          status?: Database["public"]["Enums"]["supply_status"]
+          supply_number?: string
+          tariff_category?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplies_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "supply_addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supplies_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supply_addresses: {
+        Row: {
+          apartment: string | null
+          city: string
+          created_at: string
+          floor: string | null
+          id: string
+          notes: string | null
+          postal_code: string | null
+          province: string
+          street: string
+          street_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          apartment?: string | null
+          city: string
+          created_at?: string
+          floor?: string | null
+          id?: string
+          notes?: string | null
+          postal_code?: string | null
+          province: string
+          street: string
+          street_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          apartment?: string | null
+          city?: string
+          created_at?: string
+          floor?: string | null
+          id?: string
+          notes?: string | null
+          postal_code?: string | null
+          province?: string
+          street?: string
+          street_number?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -80,6 +265,10 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "operator" | "client"
+      member_status: "active" | "inactive" | "suspended"
+      meter_status: "active" | "removed" | "faulty"
+      service_type: "water" | "gas" | "electricity"
+      supply_status: "active" | "suspended" | "inactive" | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -208,6 +397,10 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "operator", "client"],
+      member_status: ["active", "inactive", "suspended"],
+      meter_status: ["active", "removed", "faulty"],
+      service_type: ["water", "gas", "electricity"],
+      supply_status: ["active", "suspended", "inactive", "pending"],
     },
   },
 } as const
