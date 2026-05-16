@@ -1,18 +1,18 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, LayoutDashboard, LogOut, Receipt, Users, Wrench } from "lucide-react";
+import { Building2, LayoutDashboard, LogOut, Receipt, ShieldCheck, Users, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { label: "Dashboard", icon: LayoutDashboard, enabled: true, active: true },
-  { label: "Padrones", icon: Users, enabled: false },
-  { label: "Facturación", icon: Receipt, enabled: false },
-  { label: "Despacho", icon: Wrench, enabled: false },
-];
-
 export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
+  const NAV: Array<{ label: string; icon: any; to?: string; enabled: boolean; adminOnly?: boolean }> = [
+    { label: "Dashboard", icon: LayoutDashboard, to: "/admin", enabled: true },
+    { label: "Usuarios y Roles", icon: ShieldCheck, to: "/admin/usuarios", enabled: true, adminOnly: true },
+    { label: "Padrones", icon: Users, enabled: false },
+    { label: "Facturación", icon: Receipt, enabled: false },
+    { label: "Despacho", icon: Wrench, enabled: false },
+  ];
   return (
     <div className="flex min-h-screen bg-secondary/40">
       <aside className="hidden w-64 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
@@ -29,6 +29,7 @@ export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
           {NAV.map((item) => {
             const Icon = item.icon;
             const base = "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors";
+            if (item.adminOnly && !auth.hasRole("admin")) return null;
             if (!item.enabled) {
               return (
                 <span key={item.label} className={cn(base, "cursor-not-allowed text-sidebar-foreground/40")} title="Disponible en próximas fases">
@@ -37,7 +38,12 @@ export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
               );
             }
             return (
-              <Link key={item.label} to="/admin" className={cn(base, item.active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground")}>
+              <Link
+                key={item.label}
+                to={item.to!}
+                className={cn(base, "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground")}
+                activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
+              >
                 <Icon className="h-4 w-4" />{item.label}
               </Link>
             );
