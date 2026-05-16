@@ -1,12 +1,19 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { ClientPortalLayout } from "@/components/layouts/client-portal-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, FileWarning, Wrench, Droplets, Flame, Zap, Gauge, Loader2 } from "lucide-react";
+import { Wallet, FileWarning, Wrench, Droplets, Flame, Zap, Gauge, Loader2, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMyPadron } from "@/hooks/use-padron";
 import { useMyInvoices } from "@/hooks/use-billing";
+import { useCreateClaim, useMyClaims } from "@/hooks/use-claims";
 
 export const Route = createFileRoute("/_authenticated/cliente")({
   head: () => ({ meta: [{ title: "Mi cuenta — Coopecur 2.0" }] }),
@@ -18,6 +25,7 @@ function ClientPortal() {
   const navigate = useNavigate();
   const { data, isLoading } = useMyPadron();
   const { data: invoices = [], isLoading: invLoading } = useMyInvoices();
+  const { data: claimsData, isLoading: claimsLoading } = useMyClaims();
 
   useEffect(() => {
     if (auth.isAdminOrOperator && !auth.hasRole("client")) {
@@ -28,6 +36,8 @@ function ClientPortal() {
   const supplies = data?.supplies ?? [];
   const pending = invoices.filter((i: any) => Number(i.balance) > 0 && i.status !== "void");
   const totalDue = pending.reduce((acc: number, i: any) => acc + Number(i.balance || 0), 0);
+  const myClaims = claimsData?.claims ?? [];
+  const activeClaims = myClaims.filter((c: any) => !["resolved", "cancelled"].includes(c.status));
   const fmt = (n: number, c = "ARS") => new Intl.NumberFormat("es-AR", { style: "currency", currency: c }).format(n);
 
   return (
@@ -61,7 +71,16 @@ function ClientPortal() {
               <p className="mt-1 text-xs text-muted-foreground">de {invoices.length} totales</p>
             </CardContent>
           </Card>
-          <Kpi icon={<Wrench className="h-4 w-4" />} label="Reclamos activos" hint="Fase 4" />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Reclamos activos</CardTitle>
+              <Wrench className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-semibold">{activeClaims.length}</div>
+              <p className="mt-1 text-xs text-muted-foreground">de {myClaims.length} totales</p>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">Suministros</CardTitle>
@@ -135,21 +154,140 @@ function ClientPortal() {
             )}
           </CardContent>
         </Card>
+
+        <MyClaimsCard
+          memberId={claimsData?.member?.id ?? null}
+          supplies={supplies}
+          claims={myClaims}
+          loading={claimsLoading}
+        />
       </div>
     </ClientPortalLayout>
   );
 }
 
-function Kpi({ icon, label, hint }: { icon: React.ReactNode; label: string; hint: string }) {
+const CATEGORIES = [
+  { value: "water_outage", label: "Corte de agua" },
+  { value: "gas_outage", label: "Corte de gas" },
+  { value: "electricity_outage", label: "Corte de luz" },
+  { value: "leak", label: "Pérdida" },
+  { value: "meter", label: "Medidor" },
+  { value: "billing", label: "Facturación" },
+  { value: "other", label: "Otro" },
+];
+const STATUS_LABEL: Record<string, string> = {
+  open: "Abierto", assigned: "Asignado", in_progress: "En proceso", resolved: "Resuelto", cancelled: "Cancelado",
+};
+
+function MyClaimsCard({
+  memberId, supplies, claims, loading,
+}: { memberId: string | null; supplies: any[]; claims: any[]; loading: boolean }) {
+  const create = useCreateClaim();
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("other");
+  const [priority, setPriority] = useState("medium");
+  const [supplyId, setSupplyId] = useState<string>("none");
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
+
+  function submit() {
+    if (!memberId || !title.trim()) return;
+    create.mutate(
+      {
+        member_id: memberId,
+        supply_id: supplyId === "none" ? null : supplyId,
+        category, priority, title, description, location,
+      },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          setTitle(""); setDescription(""); setLocation(""); setSupplyId("none"); setCategory("other"); setPriority("medium");
+        },
+      },
+    );
+  }
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xs font-medium text-muted-foreground">{label}</CardTitle>
-        <div className="text-muted-foreground">{icon}</div>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Mis reclamos</CardTitle>
+          {memberId && (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm"><Plus className="mr-1 h-4 w-4" />Nuevo reclamo</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Nuevo reclamo</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div><Label>Título</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Describe brevemente el problema" /></div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>Categoría</Label>
+                      <Select value={category} onValueChange={setCategory}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Prioridad</Label>
+                      <Select value={priority} onValueChange={setPriority}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Baja</SelectItem>
+                          <SelectItem value="medium">Media</SelectItem>
+                          <SelectItem value="high">Alta</SelectItem>
+                          <SelectItem value="urgent">Urgente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Suministro (opcional)</Label>
+                    <Select value={supplyId} onValueChange={setSupplyId}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Sin suministro</SelectItem>
+                        {supplies.map((s: any) => (
+                          <SelectItem key={s.id} value={s.id}>{s.supply_number} · {s.service_type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Ubicación</Label><Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Dirección o referencia" /></div>
+                  <div><Label>Descripción</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                  <Button disabled={!title.trim() || create.isPending} onClick={submit}>Enviar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-semibold">—</div>
-        <p className="mt-1 text-xs text-muted-foreground">Próximamente ({hint})</p>
+        {loading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : !memberId ? (
+          <p className="text-sm text-muted-foreground">Tu cuenta aún no está vinculada a un socio.</p>
+        ) : claims.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No tenés reclamos registrados.</p>
+        ) : (
+          <div className="space-y-2">
+            {claims.map((c: any) => (
+              <div key={c.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
+                <div>
+                  <p className="font-mono text-xs text-muted-foreground">{c.claim_number}</p>
+                  <p className="font-medium">{c.title}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}{c.supplies ? ` · ${c.supplies.supply_number}` : ""}</p>
+                </div>
+                <Badge variant={c.status === "resolved" ? "default" : c.status === "open" ? "destructive" : "outline"}>{STATUS_LABEL[c.status]}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
