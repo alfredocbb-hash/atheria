@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEnsureTab } from "@/components/workspace/workspace-context";
 import { useEffect, useState } from "react";
 import { Loader2, MoreHorizontal, Search, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -30,12 +31,12 @@ import {
 
 export const Route = createFileRoute("/_authenticated/admin/usuarios")({
   head: () => ({ meta: [{ title: "Usuarios y Roles — Coopecur 2.0" }] }),
-  component: AdminUsersPage,
+  component: AdminUsersPageTrigger,
 });
 
 const ALL_ROLES: Array<"admin" | "operator" | "client"> = ["admin", "operator", "client"];
 
-function AdminUsersPage() {
+export function AdminUsersPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -197,4 +198,9 @@ function AdminUsersPage() {
       </div>
     
   );
+}
+
+function AdminUsersPageTrigger() {
+  useEnsureTab("usuarios");
+  return null;
 }

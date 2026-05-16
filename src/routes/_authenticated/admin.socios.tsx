@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEnsureTab } from "@/components/workspace/workspace-context";
 import { useEffect, useState } from "react";
 import { Loader2, Plus, Search, Users } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -23,7 +24,7 @@ import { useCreateMember, useMembers } from "@/hooks/use-padron";
 
 export const Route = createFileRoute("/_authenticated/admin/socios")({
   head: () => ({ meta: [{ title: "Socios — Coopecur 2.0" }] }),
-  component: SociosPage,
+  component: SociosPageTrigger,
 });
 
 const Schema = z.object({
@@ -36,7 +37,7 @@ const Schema = z.object({
   notes: z.string().max(2000).optional(),
 });
 
-function SociosPage() {
+export function SociosPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -182,4 +183,9 @@ function SociosPage() {
       </div>
     
   );
+}
+
+function SociosPageTrigger() {
+  useEnsureTab("socios");
+  return null;
 }

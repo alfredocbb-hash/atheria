@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEnsureTab } from "@/components/workspace/workspace-context";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Search, Wrench } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,7 +26,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/admin/reclamos")({
   head: () => ({ meta: [{ title: "Reclamos — Coopecur 2.0" }] }),
-  component: ReclamosPage,
+  component: ReclamosPageTrigger,
 });
 
 const PRIORITY_LABEL: Record<string, string> = { low: "Baja", medium: "Media", high: "Alta", urgent: "Urgente" };
@@ -37,7 +38,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   leak: "Pérdida", meter: "Medidor", billing: "Facturación", other: "Otro",
 };
 
-function ReclamosPage() {
+export function ReclamosPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
@@ -420,4 +421,9 @@ function CrewsTab() {
       </Sheet>
     </Card>
   );
+}
+
+function ReclamosPageTrigger() {
+  useEnsureTab("reclamos");
+  return null;
 }

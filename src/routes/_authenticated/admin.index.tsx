@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEnsureTab } from "@/components/workspace/workspace-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, BadgeDollarSign, Power, Users } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Dashboard — Coopecur 2.0" }] }),
-  component: AdminDashboard,
+  component: AdminDashboardTrigger,
 });
 
-function AdminDashboard() {
+export function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
@@ -44,4 +45,10 @@ function Kpi({ icon, label, hint }: { icon: React.ReactNode; label: string; hint
       </CardContent>
     </Card>
   );
+}
+
+
+function AdminDashboardTrigger() {
+  useEnsureTab("dashboard");
+  return null;
 }

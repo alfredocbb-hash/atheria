@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEnsureTab } from "@/components/workspace/workspace-context";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, FileText, Wallet, Gauge, Ban } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -22,13 +23,13 @@ import {
 
 export const Route = createFileRoute("/_authenticated/admin/facturacion")({
   head: () => ({ meta: [{ title: "Facturación — Coopecur 2.0" }] }),
-  component: FacturacionPage,
+  component: FacturacionPageTrigger,
 });
 
 const fmtMoney = (n: number, c = "ARS") =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: c }).format(Number(n || 0));
 
-function FacturacionPage() {
+export function FacturacionPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
@@ -410,4 +411,10 @@ function InvoiceDetailDialog({ id, onClose }: { id: string | null; onClose: () =
       </DialogContent>
     </Dialog>
   );
+}
+
+
+function FacturacionPageTrigger() {
+  useEnsureTab("facturacion");
+  return null;
 }

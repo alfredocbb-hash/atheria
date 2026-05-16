@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEnsureTab } from "@/components/workspace/workspace-context";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -11,14 +12,14 @@ import { useAuditLog } from "@/hooks/use-notifications";
 
 export const Route = createFileRoute("/_authenticated/admin/auditoria")({
   head: () => ({ meta: [{ title: "Auditoría — Coopecur 2.0" }] }),
-  component: AuditPage,
+  component: AuditPageTrigger,
 });
 
 const ENTITY_LABEL: Record<string, string> = {
   claim: "Reclamo", work_order: "Orden de trabajo", invoice: "Factura", payment: "Pago",
 };
 
-function AuditPage() {
+export function AuditPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
@@ -96,4 +97,9 @@ function AuditPage() {
       </div>
     
   );
+}
+
+function AuditPageTrigger() {
+  useEnsureTab("auditoria");
+  return null;
 }
