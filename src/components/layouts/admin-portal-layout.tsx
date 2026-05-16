@@ -8,7 +8,7 @@ import { WorkspaceProvider } from "@/components/workspace/workspace-context";
 import { WorkspaceTabsBar } from "@/components/workspace/workspace-tabs-bar";
 import { WorkspacePanels } from "@/components/workspace/workspace-panels";
 
-export function AdminPortalLayout({ children: _children }: { children?: React.ReactNode }) {
+export function AdminPortalLayout({ children }: { children?: React.ReactNode }) {
   const auth = useAuth();
   const NAV: Array<{ label: string; icon: any; to?: string; enabled: boolean; adminOnly?: boolean }> = [
     { label: "Dashboard", icon: LayoutDashboard, to: "/admin", enabled: true },
@@ -74,6 +74,10 @@ export function AdminPortalLayout({ children: _children }: { children?: React.Re
           </div>
         </header>
         <WorkspaceProvider>
+          {/* Route-side triggers (return null) — must live inside the
+              provider so they can call useEnsureTab() to open/focus tabs
+              when the URL changes. */}
+          {children}
           <main className="flex flex-1 flex-col overflow-hidden">
             <WorkspaceTabsBar />
             <WorkspacePanels />
