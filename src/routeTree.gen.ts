@@ -19,6 +19,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminSuministrosRouteImport } from './routes/_authenticated/admin.suministros'
 import { Route as AuthenticatedAdminSociosRouteImport } from './routes/_authenticated/admin.socios'
+import { Route as AuthenticatedAdminFacturacionRouteImport } from './routes/_authenticated/admin.facturacion'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -72,6 +73,12 @@ const AuthenticatedAdminSociosRoute =
     path: '/socios',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminFacturacionRoute =
+  AuthenticatedAdminFacturacionRouteImport.update({
+    id: '/facturacion',
+    path: '/facturacion',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
+  '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
@@ -91,6 +99,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
+  '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
@@ -104,6 +113,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
+  '/_authenticated/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/_authenticated/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/_authenticated/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/cliente'
+    | '/admin/facturacion'
     | '/admin/socios'
     | '/admin/suministros'
     | '/admin/usuarios'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/cliente'
+    | '/admin/facturacion'
     | '/admin/socios'
     | '/admin/suministros'
     | '/admin/usuarios'
@@ -140,6 +152,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/cliente'
+    | '/_authenticated/admin/facturacion'
     | '/_authenticated/admin/socios'
     | '/_authenticated/admin/suministros'
     | '/_authenticated/admin/usuarios'
@@ -225,16 +238,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSociosRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/facturacion': {
+      id: '/_authenticated/admin/facturacion'
+      path: '/facturacion'
+      fullPath: '/admin/facturacion'
+      preLoaderRoute: typeof AuthenticatedAdminFacturacionRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminFacturacionRoute: typeof AuthenticatedAdminFacturacionRoute
   AuthenticatedAdminSociosRoute: typeof AuthenticatedAdminSociosRoute
   AuthenticatedAdminSuministrosRoute: typeof AuthenticatedAdminSuministrosRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminFacturacionRoute: AuthenticatedAdminFacturacionRoute,
   AuthenticatedAdminSociosRoute: AuthenticatedAdminSociosRoute,
   AuthenticatedAdminSuministrosRoute: AuthenticatedAdminSuministrosRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, FileWarning, Wrench, Droplets, Flame, Zap, Gauge, Loader2 } from "lucide-react";
 import { useMyPadron } from "@/hooks/use-padron";
+import { useMyInvoices } from "@/hooks/use-billing";
 
 export const Route = createFileRoute("/_authenticated/cliente")({
   head: () => ({ meta: [{ title: "Mi cuenta — Coopecur 2.0" }] }),
@@ -16,6 +17,7 @@ function ClientPortal() {
   const auth = useAuth();
   const navigate = useNavigate();
   const { data, isLoading } = useMyPadron();
+  const { data: invoices = [], isLoading: invLoading } = useMyInvoices();
 
   useEffect(() => {
     if (auth.isAdminOrOperator && !auth.hasRole("client")) {
@@ -24,6 +26,9 @@ function ClientPortal() {
   }, [auth, navigate]);
 
   const supplies = data?.supplies ?? [];
+  const pending = invoices.filter((i: any) => Number(i.balance) > 0 && i.status !== "void");
+  const totalDue = pending.reduce((acc: number, i: any) => acc + Number(i.balance || 0), 0);
+  const fmt = (n: number, c = "ARS") => new Intl.NumberFormat("es-AR", { style: "currency", currency: c }).format(n);
 
   return (
     <ClientPortalLayout>
@@ -36,8 +41,26 @@ function ClientPortal() {
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Kpi icon={<Wallet className="h-4 w-4" />} label="Saldo deudor" hint="Fase 3" />
-          <Kpi icon={<FileWarning className="h-4 w-4" />} label="Facturas pendientes" hint="Fase 3" />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Saldo deudor</CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-semibold">{fmt(totalDue)}</div>
+              <p className="mt-1 text-xs text-muted-foreground">{pending.length} factura(s) pendiente(s)</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs font-medium text-muted-foreground">Facturas pendientes</CardTitle>
+              <FileWarning className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-semibold">{pending.length}</div>
+              <p className="mt-1 text-xs text-muted-foreground">de {invoices.length} totales</p>
+            </CardContent>
+          </Card>
           <Kpi icon={<Wrench className="h-4 w-4" />} label="Reclamos activos" hint="Fase 4" />
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -78,6 +101,34 @@ function ClientPortal() {
                     {s.meters?.length > 0 && (
                       <p className="mt-2 text-xs text-muted-foreground">Medidor: {s.meters[0].serial_number}</p>
                     )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="text-base">Mis facturas</CardTitle></CardHeader>
+          <CardContent>
+            {invLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+            ) : invoices.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aún no hay facturas emitidas.</p>
+            ) : (
+              <div className="space-y-2">
+                {invoices.map((i: any) => (
+                  <div key={i.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
+                    <div>
+                      <p className="font-mono text-xs text-muted-foreground">{i.invoice_number}</p>
+                      <p className="font-medium">{i.supply?.supply_number} · {i.supply?.service_type}</p>
+                      <p className="text-xs text-muted-foreground">{i.period_start} → {i.period_end} · vence {i.due_date}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{fmt(Number(i.total), i.currency)}</p>
+                      <p className="text-xs">Saldo: <span className={Number(i.balance) > 0 ? "text-destructive" : "text-primary"}>{fmt(Number(i.balance), i.currency)}</span></p>
+                      <Badge variant={i.status === "paid" ? "default" : i.status === "overdue" ? "destructive" : "secondary"} className="mt-1">{i.status}</Badge>
+                    </div>
                   </div>
                 ))}
               </div>
