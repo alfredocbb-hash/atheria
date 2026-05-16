@@ -18,7 +18,7 @@ export function useMyNotifications() {
   const query = useQuery({
     queryKey: ["notifications", "mine"],
     queryFn: () => fn({}),
-    enabled: !!auth.user,
+    enabled: !!auth.session?.access_token,
   });
 
   useEffect(() => {
