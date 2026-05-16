@@ -20,7 +20,7 @@ export const Route = createFileRoute("/")({
 function LandingPage() {
   const auth = useAuth();
 
-  if (auth.isAuthenticated) {
+  if (auth.isAuthenticated && auth.rolesLoaded) {
     return (
       <Navigate to={auth.isAdminOrOperator ? "/admin" : "/cliente"} replace />
     );

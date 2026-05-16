@@ -8,6 +8,7 @@ export interface AuthState {
   roles: AppRole[];
   isAuthenticated: boolean;
   isLoading: boolean;
+  rolesLoaded: boolean;
   hasRole: (role: AppRole) => boolean;
   hasAnyRole: (roles: AppRole[]) => boolean;
   isAdminOrOperator: boolean;
@@ -20,6 +21,7 @@ export const defaultAuthState: AuthState = {
   roles: [],
   isAuthenticated: false,
   isLoading: true,
+  rolesLoaded: false,
   hasRole: () => false,
   hasAnyRole: () => false,
   isAdminOrOperator: false,

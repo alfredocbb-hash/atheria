@@ -30,13 +30,12 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (auth.isAuthenticated) {
-      navigate({
-        to: auth.isAdminOrOperator ? "/admin" : "/cliente",
-        replace: true,
-      });
-    }
-  }, [auth.isAuthenticated, auth.isAdminOrOperator, navigate]);
+    if (!auth.isAuthenticated || !auth.rolesLoaded) return;
+    navigate({
+      to: auth.isAdminOrOperator ? "/admin" : "/cliente",
+      replace: true,
+    });
+  }, [auth.isAuthenticated, auth.rolesLoaded, auth.isAdminOrOperator, navigate]);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(schema),
