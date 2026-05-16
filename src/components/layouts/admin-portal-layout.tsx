@@ -12,7 +12,7 @@ export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
     { label: "Socios", icon: Users, to: "/admin/socios", enabled: true },
     { label: "Suministros", icon: Gauge, to: "/admin/suministros", enabled: true },
     { label: "Facturación", icon: Receipt, to: "/admin/facturacion", enabled: true },
-    { label: "Despacho", icon: Wrench, enabled: false },
+    { label: "Reclamos", icon: Wrench, to: "/admin/reclamos", enabled: true },
   ];
   return (
     <div className="flex min-h-screen bg-secondary/40">
