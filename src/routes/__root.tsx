@@ -140,10 +140,13 @@ function AuthGate() {
   const [session, setSession] = useState<Session | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
 
   const loadRoles = useCallback(async (userId: string | undefined) => {
+    setRolesLoaded(false);
     if (!userId) {
       setRoles([]);
+      setRolesLoaded(true);
       return;
     }
     const { data } = await supabase
@@ -151,6 +154,7 @@ function AuthGate() {
       .select("role")
       .eq("user_id", userId);
     setRoles((data ?? []).map((r) => r.role as AppRole));
+    setRolesLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -185,12 +189,13 @@ function AuthGate() {
       roles,
       isAuthenticated: !!session?.user,
       isLoading,
+      rolesLoaded,
       hasRole,
       hasAnyRole,
       isAdminOrOperator: hasAnyRole(["admin", "operator"]),
       signOut,
     };
-  }, [session, roles, isLoading, signOut]);
+  }, [session, roles, isLoading, rolesLoaded, signOut]);
 
   return (
     <AuthContext.Provider value={auth}>
