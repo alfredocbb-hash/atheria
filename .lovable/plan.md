@@ -1,126 +1,87 @@
+## Objetivo
 
-# Coopecur 2.0 — Plan de Acción
-
-Plataforma de gestión de servicios públicos (modelo Metrogas/Edesur) para una cooperativa. Stack: React + Vite + TS, Tailwind + shadcn/ui, TanStack Query, RHF + Zod, Supabase (Auth + Postgres + RLS).
-
-Entendido el dominio: relación **Titular (profile) → Suministro (service_point) → Facturación (invoice) / Reclamos (ticket)**, con tres roles diferenciados (`admin`, `operator`, `client`) y dos portales separados (Cliente vs Administrativo/Técnico).
+1. Promover a `alfredocbb@gmail.com` al rol `admin`.
+2. Agregar un módulo de **Gestión de Roles** dentro del backoffice, accesible únicamente para administradores.
 
 ---
 
-## Fase 1 — Cimientos: Auth, Roles y Layout Institucional
+## Paso 1 — Bootstrap del primer admin
 
-Objetivo: dejar lista la base sobre la que se monta todo el dominio.
+Como el usuario aún no existe en `auth.users` (o sí, según su primer login), se hará en dos partes:
 
-- Habilitar Lovable Cloud (Supabase) y configurar Auth (email/password + Google).
-- Esquema de roles seguro: enum `app_role` + tabla `user_roles` separada + función `has_role()` SECURITY DEFINER (no guardar `role` en `profiles` para evitar escalada de privilegios).
-- Tabla `profiles` con trigger `handle_new_user` para auto-crear el perfil al registrarse.
-- Routing protegido con TanStack Router:
-  - `/` landing institucional pública
-  - `/login`, `/register`, `/reset-password`
-  - `/_authenticated/cliente/*` (rol `client`)
-  - `/_authenticated/admin/*` (rol `admin` | `operator`)
-  - Redirect post-login según rol.
-- Design system corporativo en `src/styles.css`: paleta institucional (azul/gris cooperativo), tipografía densa, tokens de estado (pending/paid/expired, open/critical/resolved).
-- Layouts de portal: sidebar denso para admin, top-nav compacta para cliente.
-- `useAuth` + `useRole` como custom hooks sobre TanStack Query.
+- **Trigger de bootstrap (SQL):** modificar `handle_new_user()` para que, si `NEW.email = 'alfredocbb@gmail.com'`, inserte en `user_roles` con rol `admin` en vez de `client`. Esto cubre el caso de que aún no se haya registrado.
+- **Reasignación inmediata (data):** si ya existe el usuario, ejecutar un `INSERT` en `user_roles (user_id, role)` con `admin` (y opcionalmente borrar el `client` previo) usando el `id` resuelto desde `auth.users` por email.
 
-Entregable: usuario puede registrarse, iniciar sesión, y aterrizar en su portal correcto con un layout vacío pero institucional.
+> Nota: se mantiene el principio de no modificar `auth.users` directamente; sólo lectura por email para resolver el `user_id`.
 
 ---
 
-## Fase 2 — Modelo de Dominio: Padrones (Titulares + Suministros)
+## Paso 2 — Módulo "Gestión de Roles" (solo admin)
 
-Objetivo: la columna vertebral de cualquier cooperativa de servicios.
+### Backend (server functions, `src/lib/users.functions.ts`)
 
-- Migraciones Supabase:
-  - `profiles` (extender con `document_id`, `phone`)
-  - `service_points` (FK a `profiles`, `meter_number` único, `status` enum, dirección normalizada)
-  - Índices por `meter_number`, `document_id`, `client_id`.
-- RLS:
-  - `client`: solo SELECT de sus propios `service_points`.
-  - `operator`/`admin`: SELECT de todos; INSERT/UPDATE solo `admin`.
-- Custom hooks: `useServicePoints`, `useServicePoint(id)`, `useUpsertServicePoint`, `useClientsSearch`.
-- UI Admin — **Gestión de Padrones**:
-  - Búsqueda avanzada server-side (por DNI/CUIT, medidor, dirección, titular) con debouncing.
-  - Tabla densa enterprise (paginación, filtros por estado, sort).
-  - Detalle de Titular con sus N medidores asociados.
-  - Alta/baja de titulares y suministros (RHF + Zod).
-  - Acción "Suspender / Reconectar suministro" con confirmación.
-- UI Cliente — **Mis Medidores**: card por suministro con estado y dirección.
+Todas protegidas con `requireSupabaseAuth` + verificación server-side de `has_role(userId, 'admin')`. Si el caller no es admin → `throw new Error('Forbidden')`.
 
-Entregable: un admin puede gestionar el padrón completo y un cliente ve sus medidores asociados.
+- `listUsersWithRoles()` → join de `profiles` + `user_roles` agregados como array de roles. Soporta búsqueda por email/nombre/documento y paginación.
+- `assignRole({ userId, role })` → inserta el rol (idempotente vía `ON CONFLICT DO NOTHING` sobre `unique(user_id, role)`).
+- `revokeRole({ userId, role })` → borra el rol. Validación: no permitir que un admin se quite a sí mismo el rol `admin` (evita lockout).
+- `setPrimaryRole({ userId, role })` → reemplazo atómico (delete + insert) cuando se quiere un rol único.
 
----
+Auditoría mínima: `console.log` estructurado con `actorId`, `targetId`, `action`, `role` (la tabla `audit_log` formal queda para Fase 5 según plan original).
 
-## Fase 3 — Facturación y Estado de Cuenta
+### Migración SQL adicional
 
-Objetivo: ciclo económico básico (sin AFIP real, dejando hook para futuro CAE).
+- Constraint UNIQUE `(user_id, role)` en `user_roles` (verificar que ya existe; si no, agregar).
+- Índice en `user_roles(user_id)` para acelerar el join.
 
-- Migración `invoices` con enum `invoice_status`, `period` (formato `YYYY-MM`), `afip_cae` nullable.
-- Constraint: una factura por `(service_point_id, period)`.
-- Job/función SQL para marcar facturas como `expired` cuando `due_date < now()`.
-- RLS: cliente ve solo facturas de sus suministros; admin ve todo; operator solo lectura.
-- Custom hooks: `useInvoices`, `useInvoiceStats`, `useGenerateBillingRun`, `useRegisterPayment`.
-- UI Cliente:
-  - **Dashboard**: saldo deudor total agregado, próximo vencimiento, alertas.
-  - **Mis Facturas**: historial con badges de estado, gráfico de consumo por período, botón "Descargar PDF" (mock).
-- UI Admin — **Centro de Facturación**:
-  - Emisión masiva por período (selector de mes + preview de cantidad de suministros + confirmación).
-  - Registro manual de cobranzas (buscar factura → marcar `paid` → fecha y medio de pago).
-  - Reporte de morosidad con filtros.
-- KPIs: total facturado, % cobrado, morosidad, en el dashboard admin.
+### Frontend
 
-Entregable: ciclo completo emitir → cliente ve → admin registra pago.
+- **Ruta:** `src/routes/_authenticated/admin/usuarios.tsx` (solo accesible si `hasRole('admin')`; redirige si no).
+- **Sidebar:** habilitar item "Usuarios y Roles" en `admin-portal-layout.tsx` con icono `ShieldCheck`, visible sólo si `auth.hasRole('admin')` (operadores no lo ven).
+- **UI:**
+  - Tabla enterprise (shadcn `Table`) con columnas: Nombre, Email, Documento, Roles (badges), Acciones.
+  - Buscador con `Input` + debounce.
+  - Acción por fila: `DropdownMenu` con "Asignar admin / operador / cliente" y "Quitar rol X".
+  - `AlertDialog` de confirmación para cambios destructivos.
+  - Toasts de éxito/error con `sonner`.
+- **Hooks** (`src/hooks/use-users.ts`): `useUsersWithRoles`, `useAssignRole`, `useRevokeRole` (TanStack Query con invalidación de `['admin','users']`).
+
+### Validación
+
+- Zod schemas compartidos: `RoleSchema = z.enum(['admin','operator','client'])`, `UserIdSchema = z.string().uuid()`.
+- Doble validación: cliente (RHF) + servidor (`inputValidator`).
 
 ---
 
-## Fase 4 — Reclamos y Despacho de Cuadrillas
+## Detalles técnicos
 
-Objetivo: operación técnica en tiempo real.
+```text
+src/
+├── lib/
+│   └── users.functions.ts          # listUsersWithRoles, assignRole, revokeRole
+├── hooks/
+│   └── use-users.ts                # wrappers TanStack Query
+├── routes/_authenticated/admin/
+│   └── usuarios.tsx                # nueva ruta
+└── components/admin/
+    ├── users-table.tsx
+    └── role-actions-menu.tsx
+```
 
-- Migración `tickets` con enums `ticket_status`, `ticket_priority`, FK a `service_points` y a `profiles` (assigned_to operator).
-- Realtime de Supabase en la tabla `tickets` para el panel de despacho.
-- RLS: cliente crea/ve solo tickets de sus suministros; operator ve los asignados + sin asignar; admin ve todo.
-- Custom hooks: `useTickets`, `useTicketTimeline`, `useAssignTicket`, `useUpdateTicketStatus`.
-- UI Cliente — **Oficina Virtual**:
-  - Formulario de nuevo reclamo (suministro, categoría, descripción, prioridad sugerida).
-  - Listado de reclamos con timeline vertical (estados + comentarios + asignación).
-- UI Admin/Operator — **Despacho de Cuadrillas**:
-  - Vista Kanban por estado (open → in_progress → resolved → closed) con drag & drop.
-  - Vista tabla enterprise alternativa con filtros por prioridad, operario, zona.
-  - Asignación rápida a operarios técnicos.
-  - Badges visuales para `critical`.
-- Dashboard de Operaciones (admin): contadores de reclamos críticos activos, tiempo promedio de resolución, suministros suspendidos.
+### Seguridad
 
-Entregable: cliente reporta → admin despacha → operario resuelve, todo con actualización en vivo.
-
----
-
-## Fase 5 — Pulido, Seguridad y Preparación a Producción
-
-Objetivo: dejar Coopecur 2.0 lista para piloto real.
-
-- Auditoría: tabla `audit_log` con triggers en operaciones críticas (suspensiones, cobranzas, cambios de estado de tickets).
-- Hardening de RLS: revisar todas las policies, ejecutar el security scanner, activar HIBP en Auth.
-- Notificaciones: server function para email al cliente cuando se factura, vence o se actualiza un reclamo.
-- Exportaciones CSV (padrón, facturación, reclamos).
-- Seed de datos demo (titulares, suministros, facturas, tickets) para QA.
-- Estados vacíos, skeletons, error boundaries y manejo de errores consistente.
-- SEO básico de la landing pública, accesibilidad y responsive del portal cliente.
-- Stub de integración AFIP (estructura de campos `afip_cae`, hook listo para ser conectado en una futura fase 6).
-
-Entregable: plataforma estable, segura y demostrable a la cooperativa.
+- RLS de `user_roles` ya restringe SELECT/INSERT/UPDATE/DELETE a admins → las server functions actúan como el usuario y la base lo respalda.
+- `has_role()` SECURITY DEFINER ya existente → reutilizada en el guard server-side.
+- Guard anti-lockout: rechazar `revokeRole({ userId: actorId, role: 'admin' })` si es el último admin del sistema (`SELECT count(*) FROM user_roles WHERE role='admin'`).
 
 ---
 
-## Notas técnicas transversales
+## Entregables por fase de este cambio
 
-- Toda lógica sensible (emisión masiva, asignación, registro de pago) detrás de **server functions** (`createServerFn` + `requireSupabaseAuth`), nunca queries directas desde el cliente.
-- Validación dual: Zod en el form **y** Zod en el `inputValidator` de cada server function.
-- TanStack Query con `queryKey` jerárquicas (`['invoices', { clientId, period }]`) e invalidación granular tras mutaciones.
-- shadcn/ui como base; variantes propias (`badge-status-paid`, `badge-priority-critical`) en el design system, nunca colores hardcoded.
-- Roles **siempre** verificados server-side vía `has_role()`, no en el cliente.
+1. Migración SQL: trigger actualizado + (si falta) índice/constraint.
+2. Insert de datos: promover a `alfredocbb@gmail.com` si ya existe.
+3. Server functions + hooks.
+4. Ruta y UI de gestión.
+5. Item de sidebar condicionado por rol admin.
 
----
-
-Confirmá el plan (o pedime ajustes en alguna fase) y arranco con la **Fase 1**.
+¿Avanzo con la implementación?
