@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Building2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export function ClientPortalLayout({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
@@ -20,6 +21,7 @@ export function ClientPortalLayout({ children }: { children: React.ReactNode }) 
           </Link>
           <div className="flex items-center gap-2">
             <span className="hidden text-xs text-muted-foreground md:inline">{auth.user?.email}</span>
+            <NotificationsBell />
             <Button variant="ghost" size="sm" onClick={() => auth.signOut()}>
               <LogOut className="mr-2 h-4 w-4" />Salir
             </Button>

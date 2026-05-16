@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, Gauge, LayoutDashboard, LogOut, Receipt, ShieldCheck, Users, Wrench } from "lucide-react";
+import { Building2, FileText, Gauge, LayoutDashboard, LogOut, Receipt, ShieldCheck, Users, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
@@ -13,6 +14,7 @@ export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
     { label: "Suministros", icon: Gauge, to: "/admin/suministros", enabled: true },
     { label: "Facturación", icon: Receipt, to: "/admin/facturacion", enabled: true },
     { label: "Reclamos", icon: Wrench, to: "/admin/reclamos", enabled: true },
+    { label: "Auditoría", icon: FileText, to: "/admin/auditoria", enabled: true, adminOnly: true },
   ];
   return (
     <div className="flex min-h-screen bg-secondary/40">
@@ -58,12 +60,15 @@ export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b bg-card px-6 py-3 md:hidden">
-          <Link to="/admin" className="flex items-center gap-2">
+        <header className="flex items-center justify-between border-b bg-card px-6 py-3">
+          <Link to="/admin" className="flex items-center gap-2 md:invisible">
             <Building2 className="h-5 w-5 text-primary" />
             <span className="text-sm font-bold">Coopecur 2.0</span>
           </Link>
-          <Button variant="ghost" size="sm" onClick={() => auth.signOut()}><LogOut className="h-4 w-4" /></Button>
+          <div className="flex items-center gap-1">
+            <NotificationsBell />
+            <Button variant="ghost" size="sm" className="md:hidden" onClick={() => auth.signOut()}><LogOut className="h-4 w-4" /></Button>
+          </div>
         </header>
         <main className="flex-1 p-6">{children}</main>
       </div>
