@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { WorkspaceProvider } from "@/components/workspace/workspace-context";
+import { WorkspaceTabsBar } from "@/components/workspace/workspace-tabs-bar";
+import { WorkspacePanels } from "@/components/workspace/workspace-panels";
 
-export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
+export function AdminPortalLayout({ children: _children }: { children?: React.ReactNode }) {
   const auth = useAuth();
   const NAV: Array<{ label: string; icon: any; to?: string; enabled: boolean; adminOnly?: boolean }> = [
     { label: "Dashboard", icon: LayoutDashboard, to: "/admin", enabled: true },
@@ -70,7 +73,12 @@ export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="sm" className="md:hidden" onClick={() => auth.signOut()}><LogOut className="h-4 w-4" /></Button>
           </div>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <WorkspaceProvider>
+          <main className="flex flex-1 flex-col overflow-hidden">
+            <WorkspaceTabsBar />
+            <WorkspacePanels />
+          </main>
+        </WorkspaceProvider>
       </div>
     </div>
   );
