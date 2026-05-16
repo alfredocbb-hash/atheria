@@ -42,7 +42,7 @@ function ReclamosPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!auth.loading && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true });
+    if (!auth.isLoading && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true });
   }, [auth, navigate]);
 
   return (
