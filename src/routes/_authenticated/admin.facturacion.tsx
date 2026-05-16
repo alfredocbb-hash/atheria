@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, FileText, Wallet, Gauge, Ban } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { AdminPortalLayout } from "@/components/layouts/admin-portal-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -37,7 +36,7 @@ function FacturacionPage() {
   }, [auth, navigate]);
 
   return (
-    <AdminPortalLayout>
+    
       <div className="space-y-6">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Operaciones</p>
@@ -55,7 +54,7 @@ function FacturacionPage() {
           <TabsContent value="tariffs"><TariffsTab /></TabsContent>
         </Tabs>
       </div>
-    </AdminPortalLayout>
+    
   );
 }
 

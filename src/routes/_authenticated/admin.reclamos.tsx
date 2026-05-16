@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Search, Wrench } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { AdminPortalLayout } from "@/components/layouts/admin-portal-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +45,7 @@ function ReclamosPage() {
   }, [auth, navigate]);
 
   return (
-    <AdminPortalLayout>
+    
       <div className="space-y-6">
         <div>
           <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Operaciones</p>
@@ -62,7 +61,7 @@ function ReclamosPage() {
           <TabsContent value="crews" className="mt-4"><CrewsTab /></TabsContent>
         </Tabs>
       </div>
-    </AdminPortalLayout>
+    
   );
 }
 

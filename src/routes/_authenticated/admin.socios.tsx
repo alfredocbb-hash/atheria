@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
-import { AdminPortalLayout } from "@/components/layouts/admin-portal-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -75,7 +74,7 @@ function SociosPage() {
   }
 
   return (
-    <AdminPortalLayout>
+    
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -181,6 +180,6 @@ function SociosPage() {
           </CardContent>
         </Card>
       </div>
-    </AdminPortalLayout>
+    
   );
 }
