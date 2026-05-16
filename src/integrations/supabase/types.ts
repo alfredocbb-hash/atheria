@@ -14,6 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
+      claim_comments: {
+        Row: {
+          author_id: string | null
+          body: string
+          claim_id: string
+          created_at: string
+          id: string
+          is_internal: boolean
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          claim_id: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          claim_id?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_comments_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claims: {
+        Row: {
+          category: Database["public"]["Enums"]["claim_category"]
+          claim_number: string
+          created_at: string
+          description: string | null
+          id: string
+          location: string | null
+          member_id: string
+          opened_by: string | null
+          priority: Database["public"]["Enums"]["claim_priority"]
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["claim_status"]
+          supply_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["claim_category"]
+          claim_number: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          member_id: string
+          opened_by?: string | null
+          priority?: Database["public"]["Enums"]["claim_priority"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["claim_status"]
+          supply_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["claim_category"]
+          claim_number?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          location?: string | null
+          member_id?: string
+          opened_by?: string | null
+          priority?: Database["public"]["Enums"]["claim_priority"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["claim_status"]
+          supply_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claims_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claims_supply_id_fkey"
+            columns: ["supply_id"]
+            isOneToOne: false
+            referencedRelation: "supplies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crews: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          specialty: Database["public"]["Enums"]["crew_specialty"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          specialty?: Database["public"]["Enums"]["crew_specialty"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          specialty?: Database["public"]["Enums"]["crew_specialty"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           amount: number
@@ -522,6 +653,63 @@ export type Database = {
         }
         Relationships: []
       }
+      work_orders: {
+        Row: {
+          claim_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          crew_id: string
+          id: string
+          notes: string | null
+          scheduled_at: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["work_order_status"]
+          updated_at: string
+        }
+        Insert: {
+          claim_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id: string
+          id?: string
+          notes?: string | null
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["work_order_status"]
+          updated_at?: string
+        }
+        Update: {
+          claim_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          crew_id?: string
+          id?: string
+          notes?: string | null
+          scheduled_at?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["work_order_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_orders_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "crews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -541,6 +729,22 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "operator" | "client"
+      claim_category:
+        | "water_outage"
+        | "gas_outage"
+        | "electricity_outage"
+        | "leak"
+        | "meter"
+        | "billing"
+        | "other"
+      claim_priority: "low" | "medium" | "high" | "urgent"
+      claim_status:
+        | "open"
+        | "assigned"
+        | "in_progress"
+        | "resolved"
+        | "cancelled"
+      crew_specialty: "water" | "gas" | "electricity" | "general"
       invoice_item_kind: "fixed_charge" | "consumption" | "tax" | "other"
       invoice_status: "draft" | "issued" | "paid" | "overdue" | "void"
       member_status: "active" | "inactive" | "suspended"
@@ -549,6 +753,7 @@ export type Database = {
       reading_source: "manual" | "estimated" | "remote"
       service_type: "water" | "gas" | "electricity"
       supply_status: "active" | "suspended" | "inactive" | "pending"
+      work_order_status: "scheduled" | "in_progress" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -677,6 +882,24 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "operator", "client"],
+      claim_category: [
+        "water_outage",
+        "gas_outage",
+        "electricity_outage",
+        "leak",
+        "meter",
+        "billing",
+        "other",
+      ],
+      claim_priority: ["low", "medium", "high", "urgent"],
+      claim_status: [
+        "open",
+        "assigned",
+        "in_progress",
+        "resolved",
+        "cancelled",
+      ],
+      crew_specialty: ["water", "gas", "electricity", "general"],
       invoice_item_kind: ["fixed_charge", "consumption", "tax", "other"],
       invoice_status: ["draft", "issued", "paid", "overdue", "void"],
       member_status: ["active", "inactive", "suspended"],
@@ -685,6 +908,7 @@ export const Constants = {
       reading_source: ["manual", "estimated", "remote"],
       service_type: ["water", "gas", "electricity"],
       supply_status: ["active", "suspended", "inactive", "pending"],
+      work_order_status: ["scheduled", "in_progress", "completed", "cancelled"],
     },
   },
 } as const
