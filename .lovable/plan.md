@@ -1,61 +1,52 @@
-## Problema
+# Documentación del proyecto
 
-`alfredocbb@gmail.com` tiene rol `admin` en `user_roles` (confirmado en logs de red: `[{"role":"client"},{"role":"admin"}]`) y el login con password devuelve 200. Pero termina en `/cliente`, no en `/admin`.
+Generaré dos documentos en **Markdown** (versionables en el repo) y **PDF** (para compartir), guardados en `/mnt/documents/`. Sin branding específico — uso genérico "Cooperativa de Servicios".
 
-**Causa raíz:** en `src/routes/__root.tsx` (`AuthGate`), `onAuthStateChange` setea `session` de inmediato pero difiere `loadRoles` con `setTimeout(0)`. En `src/routes/login.tsx`, el `useEffect` de redirección reacciona al primer cambio de `isAuthenticated` con `roles` aún vacío → `isAdminOrOperator === false` → navega a `/cliente` antes de que lleguen los roles. Una vez en `/cliente`, el usuario ya no es reenviado.
+## Entregables
 
-El mismo problema afecta a `src/routes/index.tsx` (decide destino con `isAdminOrOperator` que puede estar “frío”).
+1. `GUIA_TECNICA.md` + `GUIA_TECNICA.pdf` — para el equipo de desarrollo
+2. `GUIA_USUARIO.md` + `GUIA_USUARIO.pdf` — para el socio/cliente final
 
-## Cambios
+## Guía técnica (detallada)
 
-1. **`src/routes/__root.tsx` — `AuthGate`**
-   - Agregar estado `rolesLoaded: boolean` (false hasta que termine el primer `loadRoles` posterior al login/sesión inicial).
-   - Exponerlo a través de `AuthState` (extender `auth-context.ts` con `rolesLoaded: boolean`).
-   - Marcar `rolesLoaded=false` al cambiar de sesión y `true` cuando `loadRoles` resuelve.
+1. **Resumen del proyecto** — propósito (portal de socios para cooperativa de servicios públicos: agua/luz/etc.), alcance funcional por fases
+2. **Arquitectura general** — diagrama de capas (frontend TanStack Start → server functions → Supabase Postgres con RLS + Realtime), runtime serverless (Cloudflare Worker)
+3. **Stack técnico** — React 19, TanStack Start v1, TanStack Router (file-based), Vite 7, Tailwind v4, shadcn/ui, Supabase (Lovable Cloud), Zod, TanStack Query
+4. **Estructura de carpetas** — `src/routes/`, `src/lib/*.functions.ts`, `src/hooks/`, `src/components/`, `src/integrations/supabase/`, `supabase/migrations/`
+5. **Autenticación y autorización** — flujo email/password, tabla `user_roles` con enum `app_role`, función `has_role()` security definer, race condition resuelta con `rolesLoaded`, rutas `_authenticated/` y redirección admin vs cliente
+6. **Modelo de datos** — listado completo de tablas por dominio:
+   - Padrones: `profiles`, `members`, `supplies`, `addresses`, `meters`
+   - Facturación: `tariffs`, `invoices`, `invoice_items`, `payments` (+ trigger `recompute_invoice_balance`)
+   - Reclamos: `claim_categories`, `claims`, `crews`, `work_orders`
+   - Auditoría/notificaciones: `audit_log`, `notifications`
+7. **RLS** — patrón "admin ve todo, cliente ve lo propio vía `members.user_id`", listado de policies clave
+8. **Server functions (`createServerFn`)** — convenciones, `requireSupabaseAuth`, `attachSupabaseAuth` en `src/start.ts`, inputs con Zod, ejemplos por dominio
+9. **Triggers y funciones SQL** — `handle_new_user`, `claims_audit_notify`, `work_orders_audit_notify`, `invoices_audit`, `payments_audit_notify`, `recompute_invoice_balance`, `log_audit`, `notify_member_user`
+10. **Realtime** — canal de `notifications`, integración con `sonner` toasts
+11. **Convenciones de UI** — design tokens en `src/styles.css` (oklch), componentes shadcn, layouts admin/cliente
+12. **Flujo de desarrollo** — cómo agregar una tabla (migración + types regenerados), agregar un server fn, agregar una ruta, agregar una notificación automática
+13. **Despliegue y entornos** — Lovable Cloud, URLs estables, secrets
+14. **Troubleshooting** — errores comunes (Unauthorized en serverFn, race condition de roles, RLS bloqueando insert, migración fallida)
+15. **Roadmap** — fases completadas (1-5) y próximas (emails, pagos online, lectura de medidores)
 
-2. **`src/lib/auth-context.ts`**
-   - Añadir `rolesLoaded: boolean` en `AuthState` y `defaultAuthState` (false).
+## Guía de usuario (cliente final / socio)
 
-3. **`src/routes/login.tsx`**
-   - Cambiar el `useEffect` para que solo redirija cuando `auth.isAuthenticated && auth.rolesLoaded`.
-   - Respetar `?redirect=` solo si el destino es compatible con el rol (si pidieron `/admin` y no es admin, mandar a `/cliente`; si pidieron `/cliente` pero es admin, igual ir a `/admin` salvo que el admin elija explícitamente — para evitar el caso actual, ignorar `redirect` cuando el usuario es admin/operator y mandarlo a `/admin`).
+1. **Bienvenida** — qué es el portal del socio
+2. **Crear cuenta e iniciar sesión** — registro con email, verificación, recuperar contraseña
+3. **Panel principal `/cliente`** — qué se ve al entrar
+4. **Mis suministros** — ver direcciones, medidores asociados
+5. **Mis facturas** — consultar, descargar, ver vencimientos y saldo
+6. **Pagos** — cómo se reflejan los pagos registrados
+7. **Reclamos** — crear un reclamo (categoría, prioridad, descripción), seguimiento de estado (received → in_progress → completed)
+8. **Notificaciones** — campanita, toasts en tiempo real, marcar como leído
+9. **Preguntas frecuentes** — qué hacer si no veo mi suministro, cómo cambiar datos personales, contacto con la cooperativa
+10. **Glosario** — suministro, medidor, factura, reclamo, orden de trabajo
 
-4. **`src/routes/index.tsx`**
-   - Mostrar loader hasta `auth.rolesLoaded`, luego decidir `/admin` vs `/cliente`.
+## Generación técnica
 
-5. **QA**
-   - Login con `alfredocbb@gmail.com` → debe ir a `/admin`.
-   - Login con un usuario solo `client` → debe ir a `/cliente`.
-   - Acceder a `/admin` directo siendo client → sigue redirigiendo a `/cliente` (guard ya existente en `admin.tsx`).
+- Markdown a mano con estructura clara y diagramas en bloques ASCII / mermaid
+- PDF generado vía `pandoc` (o `reportlab` si pandoc no está) con estilo limpio
+- QA visual: convertir cada PDF a imágenes con `pdftoppm` e inspeccionar todas las páginas antes de entregar
+- Entrega final como `<presentation-artifact>` (4 archivos)
 
-## Detalle técnico
-
-```ts
-// auth-context.ts
-export interface AuthState {
-  ...
-  rolesLoaded: boolean;
-}
-```
-
-```tsx
-// __root.tsx AuthGate
-const [rolesLoaded, setRolesLoaded] = useState(false);
-const loadRoles = useCallback(async (uid?: string) => {
-  setRolesLoaded(false);
-  if (!uid) { setRoles([]); setRolesLoaded(true); return; }
-  const { data } = await supabase.from("user_roles").select("role").eq("user_id", uid);
-  setRoles((data ?? []).map(r => r.role as AppRole));
-  setRolesLoaded(true);
-}, []);
-```
-
-```tsx
-// login.tsx
-useEffect(() => {
-  if (!auth.isAuthenticated || !auth.rolesLoaded) return;
-  navigate({ to: auth.isAdminOrOperator ? "/admin" : "/cliente", replace: true });
-}, [auth.isAuthenticated, auth.rolesLoaded, auth.isAdminOrOperator, navigate]);
-```
-
-No requiere migraciones ni cambios de RLS.
+Sin cambios al código del proyecto — solo generación de documentos en `/mnt/documents/`.
