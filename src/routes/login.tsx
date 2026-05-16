@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState, type FormEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -21,6 +21,18 @@ type LoginInput = z.infer<typeof schema>;
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Iniciar sesión — Coopecur 2.0" }] }),
+  beforeLoad: async () => {
+    const { data } = await supabase.auth.getSession();
+    const user = data.session?.user;
+    if (!user) return;
+    const { data: roleRows } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+    const roles = (roleRows ?? []).map((r) => r.role as string);
+    const isStaff = roles.includes("admin") || roles.includes("operator");
+    throw redirect({ to: isStaff ? "/admin" : "/cliente", replace: true });
+  },
   component: LoginPage,
 });
 
@@ -62,6 +74,15 @@ function LoginPage() {
     }
   };
 
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    // Defensive: ensure we never let the browser do a native GET submit
+    // (which would leak email/password into the URL) even if hydration
+    // hasn't fully attached react-hook-form's handler yet.
+    event.preventDefault();
+    event.stopPropagation();
+    void form.handleSubmit(onSubmit)(event);
+  };
+
   return (
     <AuthShell
       title="Iniciar sesión"
@@ -75,7 +96,19 @@ function LoginPage() {
         </>
       }
     >
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      {auth.isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <>
+      <form
+        onSubmit={handleFormSubmit}
+        method="post"
+        action="?"
+        noValidate
+        className="space-y-4"
+      >
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" autoComplete="email" {...form.register("email")} />
@@ -113,6 +146,8 @@ function LoginPage() {
       <Button type="button" variant="outline" className="w-full" onClick={onGoogle}>
         Continuar con Google
       </Button>
+        </>
+      )}
     </AuthShell>
   );
 }
