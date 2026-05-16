@@ -211,7 +211,7 @@ export const generateInvoice = createServerFn({ method: "POST" })
     const total = +(subtotal + taxAmount).toFixed(2);
 
     // Generate invoice number
-    const yr = new Date(data.issue_date ?? Date.now()).getFullYear?.() ?? new Date().getFullYear();
+    const yr = new Date().getFullYear();
     const invoiceNumber = `F-${yr}-${Date.now().toString().slice(-8)}`;
 
     const { data: inv, error: invErr } = await supabase
