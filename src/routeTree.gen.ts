@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated/cliente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
+import { Route as AuthenticatedAdminSuministrosRouteImport } from './routes/_authenticated/admin.suministros'
 import { Route as AuthenticatedAdminSociosRouteImport } from './routes/_authenticated/admin.socios'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -59,6 +60,12 @@ const AuthenticatedAdminUsuariosRoute =
     path: '/usuarios',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminSuministrosRoute =
+  AuthenticatedAdminSuministrosRouteImport.update({
+    id: '/suministros',
+    path: '/suministros',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminSociosRoute =
   AuthenticatedAdminSociosRouteImport.update({
     id: '/socios',
@@ -74,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
+  '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
 }
 export interface FileRoutesByTo {
@@ -84,6 +92,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
+  '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
 }
 export interface FileRoutesById {
@@ -96,6 +105,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/admin/socios': typeof AuthenticatedAdminSociosRoute
+  '/_authenticated/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
 }
 export interface FileRouteTypes {
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cliente'
     | '/admin/socios'
+    | '/admin/suministros'
     | '/admin/usuarios'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cliente'
     | '/admin/socios'
+    | '/admin/suministros'
     | '/admin/usuarios'
   id:
     | '__root__'
@@ -129,6 +141,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/cliente'
     | '/_authenticated/admin/socios'
+    | '/_authenticated/admin/suministros'
     | '/_authenticated/admin/usuarios'
   fileRoutesById: FileRoutesById
 }
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/suministros': {
+      id: '/_authenticated/admin/suministros'
+      path: '/suministros'
+      fullPath: '/admin/suministros'
+      preLoaderRoute: typeof AuthenticatedAdminSuministrosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/socios': {
       id: '/_authenticated/admin/socios'
       path: '/socios'
@@ -210,11 +230,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminSociosRoute: typeof AuthenticatedAdminSociosRoute
+  AuthenticatedAdminSuministrosRoute: typeof AuthenticatedAdminSuministrosRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminSociosRoute: AuthenticatedAdminSociosRoute,
+  AuthenticatedAdminSuministrosRoute: AuthenticatedAdminSuministrosRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
 }
 
