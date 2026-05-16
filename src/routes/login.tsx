@@ -96,6 +96,12 @@ function LoginPage() {
         </>
       }
     >
+      {auth.isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <>
       <form
         onSubmit={handleFormSubmit}
         method="post"
@@ -140,6 +146,8 @@ function LoginPage() {
       <Button type="button" variant="outline" className="w-full" onClick={onGoogle}>
         Continuar con Google
       </Button>
+        </>
+      )}
     </AuthShell>
   );
 }
