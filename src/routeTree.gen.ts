@@ -19,6 +19,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminSuministrosRouteImport } from './routes/_authenticated/admin.suministros'
 import { Route as AuthenticatedAdminSociosRouteImport } from './routes/_authenticated/admin.socios'
+import { Route as AuthenticatedAdminReclamosRouteImport } from './routes/_authenticated/admin.reclamos'
 import { Route as AuthenticatedAdminFacturacionRouteImport } from './routes/_authenticated/admin.facturacion'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -73,6 +74,12 @@ const AuthenticatedAdminSociosRoute =
     path: '/socios',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminReclamosRoute =
+  AuthenticatedAdminReclamosRouteImport.update({
+    id: '/reclamos',
+    path: '/reclamos',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminFacturacionRoute =
   AuthenticatedAdminFacturacionRouteImport.update({
     id: '/facturacion',
@@ -88,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
+  '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
@@ -100,6 +108,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
+  '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
@@ -114,6 +123,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
+  '/_authenticated/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/_authenticated/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/_authenticated/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cliente'
     | '/admin/facturacion'
+    | '/admin/reclamos'
     | '/admin/socios'
     | '/admin/suministros'
     | '/admin/usuarios'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cliente'
     | '/admin/facturacion'
+    | '/admin/reclamos'
     | '/admin/socios'
     | '/admin/suministros'
     | '/admin/usuarios'
@@ -153,6 +165,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/cliente'
     | '/_authenticated/admin/facturacion'
+    | '/_authenticated/admin/reclamos'
     | '/_authenticated/admin/socios'
     | '/_authenticated/admin/suministros'
     | '/_authenticated/admin/usuarios'
@@ -238,6 +251,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSociosRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/reclamos': {
+      id: '/_authenticated/admin/reclamos'
+      path: '/reclamos'
+      fullPath: '/admin/reclamos'
+      preLoaderRoute: typeof AuthenticatedAdminReclamosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/facturacion': {
       id: '/_authenticated/admin/facturacion'
       path: '/facturacion'
@@ -250,6 +270,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminFacturacionRoute: typeof AuthenticatedAdminFacturacionRoute
+  AuthenticatedAdminReclamosRoute: typeof AuthenticatedAdminReclamosRoute
   AuthenticatedAdminSociosRoute: typeof AuthenticatedAdminSociosRoute
   AuthenticatedAdminSuministrosRoute: typeof AuthenticatedAdminSuministrosRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
@@ -257,6 +278,7 @@ interface AuthenticatedAdminRouteChildren {
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminFacturacionRoute: AuthenticatedAdminFacturacionRoute,
+  AuthenticatedAdminReclamosRoute: AuthenticatedAdminReclamosRoute,
   AuthenticatedAdminSociosRoute: AuthenticatedAdminSociosRoute,
   AuthenticatedAdminSuministrosRoute: AuthenticatedAdminSuministrosRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
@@ -289,3 +311,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
