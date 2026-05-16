@@ -1,59 +1,86 @@
-# Análisis del sistema legacy (Coopecur viejo)
+# Espacio de Trabajo Multipestaña — Backoffice Admin
 
-Objetivo: entender las tablas compartidas y mapearlas al modelo del nuevo sistema, sin migrar todavía. Esto deja documentado el plan para cuando ejecutemos la migración real.
+## Objetivo
+Convertir el área de contenido del `AdminPortalLayout` en un workspace tipo navegador/ERP: cada vez que el usuario hace click en una opción del sidebar (o abre una entidad desde una tabla), se abre una **pestaña** persistente sobre el área principal. Cambiar de pestaña NO desmonta las otras: conservan scroll, filtros, formularios y datos cargados.
 
-## Tablas recibidas
+## Comportamiento esperado
 
-| Archivo | Filas | Rol en el sistema viejo |
-|---|---|---|
-| `titulares_coopecur.csv` | 1.716 | Persona titular del servicio (datos personales) |
-| `entidades_coopecur.csv` | 1.715 | Unidad de facturación / suministro físico (domicilio + condición fiscal) |
-| `orden_trabajo.csv` | 2 (muestra) | Órdenes de trabajo / reclamos asignados a cuadrilla |
-| `novedades.csv` | 2 (muestra) | Anuncios o avisos para clientes |
+- Barra de pestañas fija arriba del contenido, debajo del header.
+- Click en sidebar → si la pestaña existe, la enfoca; si no, la crea y la enfoca.
+- Cada pestaña muestra: ícono del módulo + título + botón "x" para cerrar (excepto Dashboard, fijo).
+- Soporta múltiples pestañas del mismo módulo con contexto distinto (ej. "Socio #1234", "Socio #5678") — futuro, pero la API lo permite desde el día 1.
+- Cambiar de pestaña actualiza la URL (`/admin/suministros`, `/admin/socios`, …) para mantener deep-linking y back/forward del browser.
+- Cerrar la pestaña activa enfoca la anterior. Cerrar todas vuelve al Dashboard.
+- Las pestañas y su orden persisten en `sessionStorage` por usuario, así un F5 no pierde el estado de navegación (los datos se vuelven a pedir vía React Query, pero los filtros/scroll se restauran).
+- Atajos: `Ctrl/Cmd+W` cierra pestaña actual; `Ctrl/Cmd+Tab` cicla (opcional, fase 2).
+- Menú contextual sobre la pestaña: Cerrar, Cerrar las demás, Cerrar todas a la derecha, Recargar.
 
-Relación clave: `titulares.entidad_id` ↔ `entidades.entidad_id` (1:1 en estos datos: 1.716 titulares ↔ 1.715 entidades; hay 1 caso a revisar). `orden_trabajo.entidad_id` referencia a la entidad/suministro.
+## Alcance — solo Backoffice
+Aplica únicamente a `/_authenticated/admin/*`. El `ClientPortalLayout` queda con navegación tradicional.
 
-## Hallazgos de calidad de datos
+## Diseño técnico
 
-- **Titulares**: 0 emails cargados, casi 0 teléfonos, 42 fechas de nacimiento. 1.581 documentos distintos sobre 1.716 → posibles duplicados de DNI. Todos `activo='S'`.
-- **Entidades**: todas tienen domicilio (`entidad_domicilio`) y CP, 0 emails, 0 CBU, 1 solo `entidad_tipo`, todas activas. Hay flags útiles: `entidad_factura_digital`, `entidad_vivienda_desocupada`, `entidad_tarifa_social`, `entidad_bonificacion_*`.
-- **Orden de trabajo**: estados observados `T` (terminado) y `R` (revisión/recibido?) — habrá que confirmar el catálogo completo. Campos: `actividad_id`, `orden_prioridad`, `orden_asignado` (string libre tipo "mauro"), `observaciones`.
-- **Novedades**: texto suelto con fecha — es un "tablón de avisos", no existe en el nuevo sistema.
+### Estrategia de renderizado
+TanStack Router por defecto **desmonta** el componente del `<Outlet />` al cambiar de ruta. Para preservar estado entre pestañas necesitamos mantener montados todos los módulos abiertos.
 
-Catálogos referenciados pero no incluidos aún: `tipo_doc_id`, `localidad_id`, `cat_iva_id`, `pais_id`, `crs_id`, `lista_prec_id`, `condicion_id`, `parametro_id`, `actividad_id`. Necesarios para resolver claves foráneas.
+Enfoque elegido: **registry de módulos + render por overlay con visibilidad**, manejado por un `WorkspaceProvider`. El `<Outlet />` deja de usarse para los hijos de `admin`; en su lugar:
 
-## Mapeo legacy → modelo nuevo
+1. Las rutas hijas (`admin.suministros.tsx`, `admin.socios.tsx`, …) siguen existiendo (deep-linking, head/meta, loaders y guards), pero su `component` solo llama a `useOpenWorkspaceTab("suministros")` en un `useEffect` y devuelve `null`. La ruta actúa como "trigger" que abre la pestaña en el workspace.
+2. El `AdminPortalLayout` renderiza el `<WorkspaceTabsBar />` + `<WorkspacePanels />`. `WorkspacePanels` recorre las pestañas abiertas y renderiza cada módulo dentro de un `<div hidden={tab.id !== activeId}>`. La pestaña activa se ve, las demás permanecen montadas pero ocultas (display:none) → se preserva scroll, estado local, formularios y caché de React Query.
+3. Un `MODULE_REGISTRY` mapea `tabKey → { title, icon, Component, routeTo }`. Convertimos los componentes actuales de cada `admin.*.tsx` (`SuministrosPage`, `SociosPage`, etc.) en componentes exportados desde `src/components/workspace/modules/*` y los registramos.
 
-| Legacy | Nuevo (tabla) | Notas |
-|---|---|---|
-| `titulares` | `members` | `titular_apellido + titular_nombre → full_name`, `titular_num_doc → document_id`, `titular_telefono/celular → phone`, `titular_socio → member_number` (si es único; sino generar). `user_id` queda NULL hasta que se invite al titular. |
-| `entidades` | `supplies` + `supply_addresses` | Domicilio se parsea a `street/street_number/city/postal_code`. `entidad_factura_digital`, `tarifa_social`, `bonificacion_*` → campos nuevos a agregar en `supplies`. `cat_iva_id` → enum/tabla de condición IVA (nueva). |
-| `entidad_id` (FK) | `supplies.member_id` | Vía join titulares↔entidades. |
-| `orden_trabajo` | `claims` + `work_orders` | `orden_referencia → claim_number`, `orden_prioridad → priority`, `orden_estado → status` (mapear T/R/…), `orden_asignado` → resolver a `crews.name` o crear cuadrilla genérica, `actividad_id → category` (requiere catálogo). |
-| `novedades` | **nueva tabla `announcements`** | No existe módulo equivalente; queda como mejora futura. |
+### Sincronización con la URL
+- Al activar una pestaña, `navigate({ to: tab.routeTo })` con `replace: true` para no inflar el history.
+- Al montar la app en una URL profunda, el efecto de la ruta abre/enfoca la pestaña correspondiente.
+- El registry sigue siendo la fuente de verdad del orden y conjunto abierto; la URL refleja solo la activa.
 
-## Cambios de esquema que necesitará el nuevo sistema
+### Estructura de archivos nuevos
+```text
+src/
+  components/workspace/
+    workspace-context.tsx       # Provider + hooks (useWorkspace, useOpenTab)
+    workspace-tabs-bar.tsx      # Barra superior con pestañas
+    workspace-panels.tsx        # Render multiplexado de módulos
+    module-registry.ts          # tabKey -> {title, icon, Component, routeTo}
+    modules/
+      dashboard-module.tsx      # Movido desde admin.index.tsx
+      socios-module.tsx
+      suministros-module.tsx
+      facturacion-module.tsx
+      reclamos-module.tsx
+      usuarios-module.tsx
+      auditoria-module.tsx
+```
 
-1. **`supplies`**: agregar `legacy_entidad_id` (int, único, indexado) para idempotencia; `is_factura_digital` (bool), `is_tarifa_social` (bool), `is_vivienda_desocupada` (bool), `discount_kind` + `discount_amount`.
-2. **`members`**: agregar `legacy_titular_id` (int, único), `legacy_socio_number` (int), `birth_date` (date), `sex` (text), opcional `tax_condition` (enum).
-3. **`supply_addresses`**: agregar `manzana`, `lote`, `casa`, `monoblock` (textos cortos) para conservar nomenclatura barrial.
-4. **`claims`**: agregar `legacy_orden_id`, `legacy_actividad_id`, `assignee_text` (texto libre del viejo "asignado") cuando no se pueda resolver a una cuadrilla.
-5. **`announcements`** (nueva): `id`, `body`, `published_at`, `is_active`, visible en portal del cliente.
-6. **Catálogos**: tablas chicas o enums para `localidades`, `tipo_documento`, `cat_iva`, `actividad` (categoría de reclamo). Para empezar alcanza con campos texto + mapeo posterior.
+### Archivos modificados
+- `src/components/layouts/admin-portal-layout.tsx`: envuelve hijos con `<WorkspaceProvider>`, reemplaza `{children}` por `<WorkspaceTabsBar /> + <WorkspacePanels />`. El sidebar sigue usando `<Link>` (no se cambia para preservar Ctrl-click → nueva pestaña del navegador y accesibilidad), pero también dispara el efecto de apertura vía la ruta.
+- `src/routes/_authenticated/admin.tsx`: sin cambios (sigue siendo layout con `<Outlet />`, pero el Outlet ahora siempre devuelve `null` desde los hijos).
+- `src/routes/_authenticated/admin.index.tsx` y cada `admin.<modulo>.tsx`: reducidos a un trigger:
+  ```tsx
+  function SuministrosRoute() {
+    const open = useOpenWorkspaceTab();
+    useEffect(() => { open("suministros"); }, [open]);
+    return null;
+  }
+  ```
+  El JSX real se mueve al módulo en `components/workspace/modules/`.
 
-## Plan de migración (cuando se ejecute, no ahora)
+### Persistencia
+`sessionStorage` con clave `workspace:admin:<userId>`, payload `{ tabs: string[], activeId: string }`. Restaurado en el provider al montar. No persistimos datos del módulo: React Query reconstruye desde caché o servidor.
 
-1. Pedir al usuario los catálogos faltantes (localidades, tipo_doc, cat_iva, actividades, estados de OT) y el dump completo de `orden_trabajo` + tablas de facturas/lecturas/pagos/medidores si existen.
-2. Aplicar migración con los campos `legacy_*` y nuevas columnas de flags.
-3. Cargar staging con `duckdb` o `psql COPY` a tablas `_staging_*`.
-4. Insertar en orden: `members` → `supply_addresses` → `supplies` → (catálogos resueltos) → `claims`/`work_orders` → `announcements`.
-5. Validación post-migración: conteos por tabla, duplicados de documento, suministros huérfanos, reclamos sin entidad.
-6. Reporte de discrepancias para que el usuario decida correcciones manuales.
+### Detalles UI
+- Barra: `h-9`, fondo `bg-card`, borde inferior, scroll horizontal cuando hay overflow.
+- Pestaña: padding `px-3`, gap con ícono, estado activo con `bg-background` + borde inferior color `primary`; inactiva `text-muted-foreground hover:bg-muted`.
+- Botón cerrar: `X` aparece en hover o si la pestaña está activa.
+- Dashboard tiene un ícono "pin" en lugar de cerrar.
 
-## Lo que NO se hace en esta ronda
+## Entregable de esta fase
+Implementación completa del workspace para los 7 módulos existentes del admin. No incluye:
+- Apertura de pestañas con contexto (ej. "Socio #1234") — se deja la API lista pero sin UI de invocación.
+- Drag-and-drop para reordenar pestañas.
+- Atajos de teclado más allá de cerrar (`Ctrl+W`).
 
-- No se modifica el esquema todavía.
-- No se cargan datos en producción.
-- No se borra ni renombra nada existente.
-
-El entregable de esta ronda es este documento de análisis + mapeo. Si lo aprobás, el próximo paso es pedirte los catálogos faltantes y armar la migración real con columnas `legacy_*`.
+## Riesgos / consideraciones
+- Mantener N módulos montados aumenta el uso de memoria. Mitigación: el registry permite marcar módulos como "unload on close" (default true), y se puede agregar un límite de N pestañas abiertas (sugerido: 10) con confirmación.
+- Los `useEffect` de los módulos siguen corriendo aunque estén ocultos (timers, subscripciones realtime). Esto es **intencional** para que las notificaciones se actualicen en background. Documentado en el código del provider.
+- Los formularios en módulos ocultos no pierden datos, pero al cerrar la pestaña sí. Fase 2 podría agregar warning "tenés cambios sin guardar".
