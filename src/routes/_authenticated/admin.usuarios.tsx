@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Loader2, MoreHorizontal, Search, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { AdminPortalLayout } from "@/components/layouts/admin-portal-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +65,7 @@ function AdminUsersPage() {
   }
 
   return (
-    <AdminPortalLayout>
+    
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -196,6 +195,6 @@ function AdminUsersPage() {
           </CardContent>
         </Card>
       </div>
-    </AdminPortalLayout>
+    
   );
 }
