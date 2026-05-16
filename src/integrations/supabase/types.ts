@@ -14,6 +14,142 @@ export type Database = {
   }
   public: {
     Tables: {
+      invoice_items: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          kind: Database["public"]["Enums"]["invoice_item_kind"]
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+          kind: Database["public"]["Enums"]["invoice_item_kind"]
+          quantity?: number
+          unit_price?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          kind?: Database["public"]["Enums"]["invoice_item_kind"]
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          balance: number
+          created_at: string
+          currency: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issue_date: string
+          member_id: string
+          notes: string | null
+          period_end: string
+          period_start: string
+          reading_current_id: string | null
+          reading_previous_id: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          subtotal: number
+          supply_id: string
+          tax_amount: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          currency?: string
+          due_date: string
+          id?: string
+          invoice_number: string
+          issue_date?: string
+          member_id: string
+          notes?: string | null
+          period_end: string
+          period_start: string
+          reading_current_id?: string | null
+          reading_previous_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          supply_id: string
+          tax_amount?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          currency?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          issue_date?: string
+          member_id?: string
+          notes?: string | null
+          period_end?: string
+          period_start?: string
+          reading_current_id?: string | null
+          reading_previous_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number
+          supply_id?: string
+          tax_amount?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_reading_current_id_fkey"
+            columns: ["reading_current_id"]
+            isOneToOne: false
+            referencedRelation: "meter_readings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_reading_previous_id_fkey"
+            columns: ["reading_previous_id"]
+            isOneToOne: false
+            referencedRelation: "meter_readings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_supply_id_fkey"
+            columns: ["supply_id"]
+            isOneToOne: false
+            referencedRelation: "supplies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           created_at: string
@@ -55,6 +191,53 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      meter_readings: {
+        Row: {
+          consumption: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          meter_id: string
+          notes: string | null
+          reading_date: string
+          reading_value: number
+          source: Database["public"]["Enums"]["reading_source"]
+          updated_at: string
+        }
+        Insert: {
+          consumption?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          meter_id: string
+          notes?: string | null
+          reading_date?: string
+          reading_value: number
+          source?: Database["public"]["Enums"]["reading_source"]
+          updated_at?: string
+        }
+        Update: {
+          consumption?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          meter_id?: string
+          notes?: string | null
+          reading_date?: string
+          reading_value?: number
+          source?: Database["public"]["Enums"]["reading_source"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meter_readings_meter_id_fkey"
+            columns: ["meter_id"]
+            isOneToOne: false
+            referencedRelation: "meters"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meters: {
         Row: {
@@ -99,6 +282,50 @@ export type Database = {
             columns: ["supply_id"]
             isOneToOne: false
             referencedRelation: "supplies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes: string | null
+          payment_date: string
+          reference: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          payment_date?: string
+          reference?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          payment_date?: string
+          reference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -229,6 +456,51 @@ export type Database = {
         }
         Relationships: []
       }
+      tariffs: {
+        Row: {
+          category: string | null
+          created_at: string
+          currency: string
+          fixed_charge: number
+          id: string
+          is_active: boolean
+          name: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          unit_price: number
+          updated_at: string
+          valid_from: string
+          valid_to: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          currency?: string
+          fixed_charge?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          service_type: Database["public"]["Enums"]["service_type"]
+          unit_price?: number
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          currency?: string
+          fixed_charge?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          service_type?: Database["public"]["Enums"]["service_type"]
+          unit_price?: number
+          updated_at?: string
+          valid_from?: string
+          valid_to?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -262,11 +534,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      recompute_invoice_balance: {
+        Args: { _invoice_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "operator" | "client"
+      invoice_item_kind: "fixed_charge" | "consumption" | "tax" | "other"
+      invoice_status: "draft" | "issued" | "paid" | "overdue" | "void"
       member_status: "active" | "inactive" | "suspended"
       meter_status: "active" | "removed" | "faulty"
+      payment_method: "cash" | "transfer" | "card" | "debit" | "other"
+      reading_source: "manual" | "estimated" | "remote"
       service_type: "water" | "gas" | "electricity"
       supply_status: "active" | "suspended" | "inactive" | "pending"
     }
@@ -397,8 +677,12 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "operator", "client"],
+      invoice_item_kind: ["fixed_charge", "consumption", "tax", "other"],
+      invoice_status: ["draft", "issued", "paid", "overdue", "void"],
       member_status: ["active", "inactive", "suspended"],
       meter_status: ["active", "removed", "faulty"],
+      payment_method: ["cash", "transfer", "card", "debit", "other"],
+      reading_source: ["manual", "estimated", "remote"],
       service_type: ["water", "gas", "electricity"],
       supply_status: ["active", "suspended", "inactive", "pending"],
     },
