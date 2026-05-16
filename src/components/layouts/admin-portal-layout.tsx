@@ -11,7 +11,7 @@ export function AdminPortalLayout({ children }: { children: React.ReactNode }) {
     { label: "Usuarios y Roles", icon: ShieldCheck, to: "/admin/usuarios", enabled: true, adminOnly: true },
     { label: "Socios", icon: Users, to: "/admin/socios", enabled: true },
     { label: "Suministros", icon: Gauge, to: "/admin/suministros", enabled: true },
-    { label: "Facturación", icon: Receipt, enabled: false },
+    { label: "Facturación", icon: Receipt, to: "/admin/facturacion", enabled: true },
     { label: "Despacho", icon: Wrench, enabled: false },
   ];
   return (
