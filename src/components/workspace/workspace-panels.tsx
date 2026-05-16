@@ -25,12 +25,9 @@ export function WorkspacePanels() {
             key={key}
             role="tabpanel"
             hidden={!isActive}
-            className={isActive ? "p-6" : ""}
+            className="p-6"
           >
-            {isActive ? <Component /> : (
-              // Keep mounted but hidden: render in a non-painted container.
-              <div style={{ display: "none" }}><Component /></div>
-            )}
+            <Component />
           </div>
         );
       })}
