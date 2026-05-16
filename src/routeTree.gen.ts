@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated/cliente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
+import { Route as AuthenticatedAdminSociosRouteImport } from './routes/_authenticated/admin.socios'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -58,6 +59,12 @@ const AuthenticatedAdminUsuariosRoute =
     path: '/usuarios',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminSociosRoute =
+  AuthenticatedAdminSociosRouteImport.update({
+    id: '/socios',
+    path: '/socios',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
+  '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
 }
 export interface FileRoutesByTo {
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
+  '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
 }
 export interface FileRoutesById {
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
+  '/_authenticated/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
 }
 export interface FileRouteTypes {
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/cliente'
+    | '/admin/socios'
     | '/admin/usuarios'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/cliente'
+    | '/admin/socios'
     | '/admin/usuarios'
   id:
     | '__root__'
@@ -116,6 +128,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/cliente'
+    | '/_authenticated/admin/socios'
     | '/_authenticated/admin/usuarios'
   fileRoutesById: FileRoutesById
 }
@@ -185,14 +198,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/socios': {
+      id: '/_authenticated/admin/socios'
+      path: '/socios'
+      fullPath: '/admin/socios'
+      preLoaderRoute: typeof AuthenticatedAdminSociosRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminSociosRoute: typeof AuthenticatedAdminSociosRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminSociosRoute: AuthenticatedAdminSociosRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
 }
 
@@ -223,3 +245,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
