@@ -18,7 +18,7 @@ const ENTITY_LABEL: Record<string, string> = {
   claim: "Reclamo", work_order: "Orden de trabajo", invoice: "Factura", payment: "Pago",
 };
 
-function AuditPage() {
+export function AuditPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   useEffect(() => {

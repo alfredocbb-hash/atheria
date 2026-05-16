@@ -37,7 +37,7 @@ const CATEGORY_LABEL: Record<string, string> = {
   leak: "Pérdida", meter: "Medidor", billing: "Facturación", other: "Otro",
 };
 
-function ReclamosPage() {
+export function ReclamosPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   useEffect(() => {

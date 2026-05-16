@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/admin/facturacion")({
 const fmtMoney = (n: number, c = "ARS") =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: c }).format(Number(n || 0));
 
-function FacturacionPage() {
+export function FacturacionPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   useEffect(() => {

@@ -36,7 +36,7 @@ const Schema = z.object({
   notes: z.string().max(2000).optional(),
 });
 
-function SociosPage() {
+export function SociosPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");

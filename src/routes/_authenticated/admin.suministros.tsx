@@ -64,7 +64,7 @@ const MeterSchema = z.object({
   status: z.enum(["active", "removed", "faulty"]),
 });
 
-function SuministrosPage() {
+export function SuministrosPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");

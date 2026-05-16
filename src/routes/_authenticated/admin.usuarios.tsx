@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_authenticated/admin/usuarios")({
 
 const ALL_ROLES: Array<"admin" | "operator" | "client"> = ["admin", "operator", "client"];
 
-function AdminUsersPage() {
+export function AdminUsersPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
