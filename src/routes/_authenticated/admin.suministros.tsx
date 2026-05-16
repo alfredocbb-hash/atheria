@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEnsureTab } from "@/components/workspace/workspace-context";
 import { useEffect, useState } from "react";
 import { Droplets, Flame, Gauge, Loader2, Plus, Search, Zap } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -28,7 +29,7 @@ import {
 
 export const Route = createFileRoute("/_authenticated/admin/suministros")({
   head: () => ({ meta: [{ title: "Suministros — Coopecur 2.0" }] }),
-  component: SuministrosPage,
+  component: SuministrosPageTrigger,
 });
 
 const ServiceIcon = ({ t }: { t: string }) =>
@@ -372,4 +373,9 @@ function MetersSheet({ supplyId, onClose }: { supplyId: string | null; onClose: 
       </SheetContent>
     </Sheet>
   );
+}
+
+function SuministrosPageTrigger() {
+  useEnsureTab("suministros");
+  return null;
 }
