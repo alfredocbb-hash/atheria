@@ -15,6 +15,7 @@ import { useLinkMyMember, useMyPadron } from "@/hooks/use-padron";
 import { useMyInvoices } from "@/hooks/use-billing";
 import { useCreateClaim, useMyClaims } from "@/hooks/use-claims";
 import { InvoiceDetailDialog } from "@/components/client/invoice-detail-dialog";
+import { Link2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/cliente")({
   head: () => ({ meta: [{ title: "Mi cuenta — Coopecur 2.0" }] }),
@@ -309,6 +310,66 @@ function MyClaimsCard({
             ))}
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LinkAccountCard() {
+  const link = useLinkMyMember();
+  const [memberNumber, setMemberNumber] = useState("");
+  const [documentId, setDocumentId] = useState("");
+
+  const valid = memberNumber.trim().length >= 1 && documentId.trim().length >= 6;
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!valid) return;
+    link.mutate({ member_number: memberNumber.trim(), document_id: documentId.trim() });
+  }
+
+  return (
+    <Card className="border-primary/40">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Link2 className="h-4 w-4" /> Vinculá tu cuenta al padrón
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Para ver tus facturas, suministros y reclamos, ingresá tu número de socio y DNI.
+        </p>
+        <form onSubmit={submit} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <div>
+            <Label htmlFor="member-number">Número de socio</Label>
+            <Input
+              id="member-number"
+              value={memberNumber}
+              onChange={(e) => setMemberNumber(e.target.value)}
+              placeholder="Ej: 1234"
+              maxLength={40}
+              autoComplete="off"
+            />
+          </div>
+          <div>
+            <Label htmlFor="document-id">DNI</Label>
+            <Input
+              id="document-id"
+              value={documentId}
+              onChange={(e) => setDocumentId(e.target.value)}
+              placeholder="Sin puntos"
+              maxLength={20}
+              autoComplete="off"
+            />
+          </div>
+          <Button type="submit" disabled={!valid || link.isPending}>
+            {link.isPending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : null}
+            Vincular
+          </Button>
+        </form>
+        <p className="mt-3 text-xs text-muted-foreground">
+          ¿No podés vincular tu cuenta? Contactá a la cooperativa para verificar tus datos en el padrón.
+        </p>
       </CardContent>
     </Card>
   );
