@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withActingTenant } from "@/lib/acting-tenant-middleware";
 
 async function ensureStaff(supabase: any, userId: string) {
   const [{ data: isAdmin }, { data: isOp }] = await Promise.all([
@@ -10,7 +11,7 @@ async function ensureStaff(supabase: any, userId: string) {
 }
 
 export const getAdminDashboardStats = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     await ensureStaff(supabase, userId);

@@ -25,13 +25,15 @@ export const Route = createFileRoute("/login")({
     const { data } = await supabase.auth.getSession();
     const user = data.session?.user;
     if (!user) return;
-    const { data: roleRows } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
+    const [{ data: roleRows }, { data: superRow }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", user.id),
+      supabase.from("super_admins").select("user_id").eq("user_id", user.id).maybeSingle(),
+    ]);
     const roles = (roleRows ?? []).map((r) => r.role as string);
     const isStaff = roles.includes("admin") || roles.includes("operator");
-    throw redirect({ to: isStaff ? "/admin" : "/cliente", replace: true });
+    const isSuper = !!superRow;
+    const dest = isSuper ? "/super" : isStaff ? "/admin" : "/cliente";
+    throw redirect({ to: dest, replace: true });
   },
   component: LoginPage,
 });
@@ -68,15 +70,17 @@ function LoginPage() {
     // hidrate `rolesLoaded` en el hook useAuth.
     const userId = data.session?.user.id;
     let isStaff = false;
+    let isSuper = false;
     if (userId) {
-      const { data: roleRows } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
+      const [{ data: roleRows }, { data: superRow }] = await Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", userId),
+        supabase.from("super_admins").select("user_id").eq("user_id", userId).maybeSingle(),
+      ]);
       const roles = (roleRows ?? []).map((r) => r.role as string);
       isStaff = roles.includes("admin") || roles.includes("operator");
+      isSuper = !!superRow;
     }
-    navigate({ to: isStaff ? "/admin" : "/cliente", replace: true });
+    navigate({ to: isSuper ? "/super" : isStaff ? "/admin" : "/cliente", replace: true });
   };
 
   const onGoogle = async () => {

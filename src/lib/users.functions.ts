@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withActingTenant } from "@/lib/acting-tenant-middleware";
 
 const RoleSchema = z.enum(["admin", "operator", "client"]);
 const UserIdSchema = z.string().uuid();
@@ -15,7 +16,7 @@ async function ensureAdmin(supabase: any, userId: string) {
 }
 
 export const listUsersWithRoles = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((input: { search?: string }) =>
     z.object({ search: z.string().trim().max(120).optional() }).parse(input ?? {}),
   )
@@ -60,7 +61,7 @@ export const listUsersWithRoles = createServerFn({ method: "GET" })
   });
 
 export const assignRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((input: { userId: string; role: string }) =>
     z.object({ userId: UserIdSchema, role: RoleSchema }).parse(input),
   )
@@ -80,7 +81,7 @@ export const assignRole = createServerFn({ method: "POST" })
   });
 
 export const revokeRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((input: { userId: string; role: string }) =>
     z.object({ userId: UserIdSchema, role: RoleSchema }).parse(input),
   )

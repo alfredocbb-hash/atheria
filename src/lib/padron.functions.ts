@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withActingTenant } from "@/lib/acting-tenant-middleware";
 
 async function getTenantId(supabase: any): Promise<string> {
   const { data, error } = await supabase.rpc("current_tenant_id");
@@ -40,7 +41,7 @@ const MemberInput = z.object({
 });
 
 export const listMembers = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: { search?: string }) =>
     z.object({ search: z.string().trim().max(120).optional() }).parse(i ?? {}),
   )
@@ -62,7 +63,7 @@ export const listMembers = createServerFn({ method: "GET" })
   });
 
 export const createMember = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => MemberInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -82,7 +83,7 @@ export const createMember = createServerFn({ method: "POST" })
   });
 
 export const updateMember = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z.object({ id: z.string().uuid(), patch: MemberInput.partial() }).parse(i),
   )
@@ -95,7 +96,7 @@ export const updateMember = createServerFn({ method: "POST" })
   });
 
 export const deleteMember = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -138,7 +139,7 @@ const SupplyInput = z.object({
 });
 
 export const listSupplies = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: { search?: string; service_type?: string; status?: string }) =>
     z
       .object({
@@ -170,7 +171,7 @@ export const listSupplies = createServerFn({ method: "GET" })
   });
 
 export const createSupply = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => SupplyInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -213,7 +214,7 @@ export const createSupply = createServerFn({ method: "POST" })
   });
 
 export const updateSupplyStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z
       .object({
@@ -239,7 +240,7 @@ const SupplyPatch = z.object({
 });
 
 export const updateSupply = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z.object({ id: z.string().uuid(), patch: SupplyPatch }).parse(i),
   )
@@ -255,7 +256,7 @@ export const updateSupply = createServerFn({ method: "POST" })
   });
 
 export const deleteSupply = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -290,7 +291,7 @@ const MeterInput = z.object({
 });
 
 export const listMetersBySupply = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: { supply_id: string }) =>
     z.object({ supply_id: z.string().uuid() }).parse(i),
   )
@@ -306,7 +307,7 @@ export const listMetersBySupply = createServerFn({ method: "GET" })
   });
 
 export const createMeter = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => MeterInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -329,7 +330,7 @@ export const createMeter = createServerFn({ method: "POST" })
   });
 
 export const updateMeter = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z.object({ id: z.string().uuid(), patch: MeterInput.partial() }).parse(i),
   )
@@ -346,7 +347,7 @@ export const updateMeter = createServerFn({ method: "POST" })
   });
 
 export const deleteMeter = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -363,7 +364,7 @@ export const deleteMeter = createServerFn({ method: "POST" })
 
 // ---------- Client-facing ----------
 export const listMyMemberAndSupplies = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data: member } = await supabase
@@ -391,7 +392,7 @@ const LinkMyMemberInput = z.object({
 });
 
 export const linkMyMember = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => LinkMyMemberInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;

@@ -1,10 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withActingTenant } from "@/lib/acting-tenant-middleware";
 
 // Returns whether the current user is super admin and whether they belong to any tenant.
 export const getMyContext = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .handler(async ({ context }) => {
     const { supabase, userId } = context as any;
     const [{ data: isSuper }, { data: memberships }] = await Promise.all([
@@ -24,7 +25,7 @@ const SlugSchema = z
   .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones");
 
 export const checkSlugAvailable = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((d) => z.object({ slug: SlugSchema }).parse(d))
   .handler(async ({ data, context }) => {
     const { supabase } = context as any;
@@ -45,7 +46,7 @@ const CreateMyTenantSchema = z.object({
 });
 
 export const createMyTenant = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((d) => CreateMyTenantSchema.parse(d))
   .handler(async ({ data, context }) => {
     const { supabase, userId, claims } = context as any;
