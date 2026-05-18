@@ -15,9 +15,9 @@ export function SubscriptionGate() {
   if (error || !data) return null;
   const status = data.tenant.status;
 
-  if (status === "active") return null;
+  if (status !== "trial") return null;
 
-  if (status === "trial") {
+  {
     const days = data.trialDaysLeft ?? 0;
     return (
       <Alert className="rounded-none border-x-0 border-t-0">
@@ -37,8 +37,9 @@ export function SubscriptionGate() {
       </Alert>
     );
   }
+}
 
-  // past_due, suspended, cancelled → block
+function SuspendedScreen({ status }: { status: string }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-secondary/40 p-6">
       <div className="max-w-md rounded-lg border bg-card p-6 text-center shadow-sm">
@@ -70,7 +71,7 @@ export function SubscriptionGuard({ children }: { children: React.ReactNode }) {
   const { data } = useCurrentSubscription();
   const status = data?.tenant?.status;
   if (status === "past_due" || status === "suspended" || status === "cancelled") {
-    return <SubscriptionGate />;
+    return <SuspendedScreen status={status} />;
   }
   return <>{children}</>;
 }
