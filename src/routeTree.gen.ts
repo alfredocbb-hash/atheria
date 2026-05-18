@@ -22,6 +22,7 @@ import { Route as AuthenticatedAdminTarifasRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminSuministrosRouteImport } from './routes/_authenticated/admin.suministros'
 import { Route as AuthenticatedAdminSociosRouteImport } from './routes/_authenticated/admin.socios'
 import { Route as AuthenticatedAdminReclamosRouteImport } from './routes/_authenticated/admin.reclamos'
+import { Route as AuthenticatedAdminFacturacionSuscripcionRouteImport } from './routes/_authenticated/admin.facturacion-suscripcion'
 import { Route as AuthenticatedAdminFacturacionRouteImport } from './routes/_authenticated/admin.facturacion'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as ApiPublicBillingWebhookProviderRouteImport } from './routes/api/public/billing-webhook.$provider'
@@ -95,6 +96,12 @@ const AuthenticatedAdminReclamosRoute =
     path: '/reclamos',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminFacturacionSuscripcionRoute =
+  AuthenticatedAdminFacturacionSuscripcionRouteImport.update({
+    id: '/facturacion-suscripcion',
+    path: '/facturacion-suscripcion',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminFacturacionRoute =
   AuthenticatedAdminFacturacionRouteImport.update({
     id: '/facturacion',
@@ -123,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/cliente': typeof AuthenticatedClienteRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
+  '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
@@ -139,6 +147,7 @@ export interface FileRoutesByTo {
   '/cliente': typeof AuthenticatedClienteRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
+  '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
@@ -158,6 +167,7 @@ export interface FileRoutesById {
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
+  '/_authenticated/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/_authenticated/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/_authenticated/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/_authenticated/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/admin/auditoria'
     | '/admin/facturacion'
+    | '/admin/facturacion-suscripcion'
     | '/admin/reclamos'
     | '/admin/socios'
     | '/admin/suministros'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/admin/auditoria'
     | '/admin/facturacion'
+    | '/admin/facturacion-suscripcion'
     | '/admin/reclamos'
     | '/admin/socios'
     | '/admin/suministros'
@@ -211,6 +223,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cliente'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/facturacion'
+    | '/_authenticated/admin/facturacion-suscripcion'
     | '/_authenticated/admin/reclamos'
     | '/_authenticated/admin/socios'
     | '/_authenticated/admin/suministros'
@@ -322,6 +335,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminReclamosRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/facturacion-suscripcion': {
+      id: '/_authenticated/admin/facturacion-suscripcion'
+      path: '/facturacion-suscripcion'
+      fullPath: '/admin/facturacion-suscripcion'
+      preLoaderRoute: typeof AuthenticatedAdminFacturacionSuscripcionRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/facturacion': {
       id: '/_authenticated/admin/facturacion'
       path: '/facturacion'
@@ -349,6 +369,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminFacturacionRoute: typeof AuthenticatedAdminFacturacionRoute
+  AuthenticatedAdminFacturacionSuscripcionRoute: typeof AuthenticatedAdminFacturacionSuscripcionRoute
   AuthenticatedAdminReclamosRoute: typeof AuthenticatedAdminReclamosRoute
   AuthenticatedAdminSociosRoute: typeof AuthenticatedAdminSociosRoute
   AuthenticatedAdminSuministrosRoute: typeof AuthenticatedAdminSuministrosRoute
@@ -360,6 +381,8 @@ interface AuthenticatedAdminRouteChildren {
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminFacturacionRoute: AuthenticatedAdminFacturacionRoute,
+  AuthenticatedAdminFacturacionSuscripcionRoute:
+    AuthenticatedAdminFacturacionSuscripcionRoute,
   AuthenticatedAdminReclamosRoute: AuthenticatedAdminReclamosRoute,
   AuthenticatedAdminSociosRoute: AuthenticatedAdminSociosRoute,
   AuthenticatedAdminSuministrosRoute: AuthenticatedAdminSuministrosRoute,
@@ -396,3 +419,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
