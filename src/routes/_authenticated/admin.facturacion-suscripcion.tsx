@@ -51,6 +51,19 @@ function SubscriptionPage() {
 
   const sub = subQ.data!;
   const t = sub.tenant;
+  if (!t) {
+    return (
+      <div className="p-6">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Sin cooperativa activa</AlertTitle>
+          <AlertDescription>
+            Tu usuario no está asociado a ninguna cooperativa. Si sos super admin, gestioná los tenants desde Plataforma.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   const providerConfigured = sub.providerConfigured;
 
   return (

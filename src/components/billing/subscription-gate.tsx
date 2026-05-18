@@ -13,6 +13,7 @@ import { useCurrentSubscription } from "@/hooks/use-subscription";
 export function SubscriptionGate() {
   const { data, error } = useCurrentSubscription();
   if (error || !data) return null;
+  if (!data.tenant) return null;
   const status = data.tenant.status;
 
   if (status !== "trial") return null;
