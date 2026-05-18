@@ -654,9 +654,10 @@ export type Database = {
           id: string
           is_active: boolean
           limits: Json
+          mp_preapproval_plan_id: string | null
           name: string
           price_cents: number
-          stripe_price_id: string | null
+          provider_price_id: string | null
           updated_at: string
         }
         Insert: {
@@ -668,9 +669,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           limits?: Json
+          mp_preapproval_plan_id?: string | null
           name: string
           price_cents?: number
-          stripe_price_id?: string | null
+          provider_price_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -682,9 +684,10 @@ export type Database = {
           id?: string
           is_active?: boolean
           limits?: Json
+          mp_preapproval_plan_id?: string | null
           name?: string
           price_cents?: number
-          stripe_price_id?: string | null
+          provider_price_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -724,7 +727,8 @@ export type Database = {
           created_at: string
           id: string
           payload: Json
-          stripe_event_id: string
+          provider: string
+          provider_event_id: string
           tenant_id: string | null
           type: string
         }
@@ -732,7 +736,8 @@ export type Database = {
           created_at?: string
           id?: string
           payload?: Json
-          stripe_event_id: string
+          provider?: string
+          provider_event_id: string
           tenant_id?: string | null
           type: string
         }
@@ -740,7 +745,8 @@ export type Database = {
           created_at?: string
           id?: string
           payload?: Json
-          stripe_event_id?: string
+          provider?: string
+          provider_event_id?: string
           tenant_id?: string | null
           type?: string
         }
@@ -976,38 +982,41 @@ export type Database = {
       }
       tenants: {
         Row: {
+          billing_customer_id: string | null
+          billing_provider: string
+          billing_subscription_id: string | null
           created_at: string
           id: string
           name: string
           plan_id: string | null
           slug: string
           status: Database["public"]["Enums"]["tenant_status"]
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
           trial_ends_at: string | null
           updated_at: string
         }
         Insert: {
+          billing_customer_id?: string | null
+          billing_provider?: string
+          billing_subscription_id?: string | null
           created_at?: string
           id?: string
           name: string
           plan_id?: string | null
           slug: string
           status?: Database["public"]["Enums"]["tenant_status"]
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           trial_ends_at?: string | null
           updated_at?: string
         }
         Update: {
+          billing_customer_id?: string | null
+          billing_provider?: string
+          billing_subscription_id?: string | null
           created_at?: string
           id?: string
           name?: string
           plan_id?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["tenant_status"]
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
           trial_ends_at?: string | null
           updated_at?: string
         }
