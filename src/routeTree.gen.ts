@@ -14,6 +14,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as PreciosRouteImport } from './routes/precios'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FuncionalidadesRouteImport } from './routes/funcionalidades'
+import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as CasosRouteImport } from './routes/casos'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
@@ -61,6 +62,11 @@ const LoginRoute = LoginRouteImport.update({
 const FuncionalidadesRoute = FuncionalidadesRouteImport.update({
   id: '/funcionalidades',
   path: '/funcionalidades',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactoRoute = ContactoRouteImport.update({
+  id: '/contacto',
+  path: '/contacto',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CasosRoute = CasosRouteImport.update({
@@ -195,6 +201,7 @@ const ApiPublicBillingWebhookProviderRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/casos': typeof CasosRoute
+  '/contacto': typeof ContactoRoute
   '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
   '/precios': typeof PreciosRoute
@@ -224,6 +231,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/casos': typeof CasosRoute
+  '/contacto': typeof ContactoRoute
   '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
   '/precios': typeof PreciosRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/casos': typeof CasosRoute
+  '/contacto': typeof ContactoRoute
   '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
   '/precios': typeof PreciosRoute
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/casos'
+    | '/contacto'
     | '/funcionalidades'
     | '/login'
     | '/precios'
@@ -313,6 +323,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/casos'
+    | '/contacto'
     | '/funcionalidades'
     | '/login'
     | '/precios'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/casos'
+    | '/contacto'
     | '/funcionalidades'
     | '/login'
     | '/precios'
@@ -372,6 +384,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   CasosRoute: typeof CasosRoute
+  ContactoRoute: typeof ContactoRoute
   FuncionalidadesRoute: typeof FuncionalidadesRoute
   LoginRoute: typeof LoginRoute
   PreciosRoute: typeof PreciosRoute
@@ -415,6 +428,13 @@ declare module '@tanstack/react-router' {
       path: '/funcionalidades'
       fullPath: '/funcionalidades'
       preLoaderRoute: typeof FuncionalidadesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contacto': {
+      id: '/contacto'
+      path: '/contacto'
+      fullPath: '/contacto'
+      preLoaderRoute: typeof ContactoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/casos': {
@@ -652,6 +672,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   CasosRoute: CasosRoute,
+  ContactoRoute: ContactoRoute,
   FuncionalidadesRoute: FuncionalidadesRoute,
   LoginRoute: LoginRoute,
   PreciosRoute: PreciosRoute,
@@ -662,3 +683,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
