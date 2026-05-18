@@ -43,7 +43,7 @@ export function FacturaNewView({ tabId }: ViewComponentProps) {
               <div><Label>Hasta</Label><Input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} /></div>
               <div><Label>Vence</Label><Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} /></div>
             </div>
-            <div><Label>Impuesto (0–1, ej 0.21)</Label><Input type="number" step="0.01" value={form.tax_rate} onChange={(e) => setForm({ ...form, tax_rate: e.target.value })} /></div>
+            <div><Label>Impuesto (0–1, ej 0.21)</Label><Input type="number" step="0.01" min="0" max="1" value={form.tax_rate} onChange={(e) => setForm({ ...form, tax_rate: e.target.value === "" ? 0 : Number(e.target.value) })} /></div>
             <div><Label>Notas</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             <div className="flex gap-2 pt-2">
               <Button onClick={submit} disabled={gen.isPending || !form.supply_id}>
