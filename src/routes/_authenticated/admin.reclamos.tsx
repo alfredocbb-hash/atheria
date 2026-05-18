@@ -85,9 +85,6 @@ function ClaimsTab() {
                 {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
-        <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:reclamo.detail:new", viewKey: "reclamo.detail", title: "Nuevo reclamo", iconKey: "wrench", parentModule: "reclamos" })}>
-          <Plus className="mr-1 h-4 w-4" />Nuevo reclamo
-        </Button>
       </div>
       <CardContent className="pt-4">
         {isLoading ? (
