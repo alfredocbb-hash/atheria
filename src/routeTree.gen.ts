@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSuperRouteImport } from './routes/_authenticated/super'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated/cliente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
@@ -59,6 +60,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedSuperRoute = AuthenticatedSuperRouteImport.update({
   id: '/super',
   path: '/super',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedClienteRoute = AuthenticatedClienteRouteImport.update({
@@ -162,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/super': typeof AuthenticatedSuperRouteWithChildren
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/cliente': typeof AuthenticatedClienteRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/super': typeof AuthenticatedSuperRouteWithChildren
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
+  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/super': typeof AuthenticatedSuperRouteWithChildren
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/cliente'
+    | '/onboarding'
     | '/super'
     | '/admin/auditoria'
     | '/admin/facturacion'
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/cliente'
+    | '/onboarding'
     | '/super'
     | '/admin/auditoria'
     | '/admin/facturacion'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/cliente'
+    | '/_authenticated/onboarding'
     | '/_authenticated/super'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/facturacion'
@@ -348,6 +360,13 @@ declare module '@tanstack/react-router' {
       path: '/super'
       fullPath: '/super'
       preLoaderRoute: typeof AuthenticatedSuperRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/cliente': {
@@ -513,12 +532,14 @@ const AuthenticatedSuperRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
+  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedSuperRoute: typeof AuthenticatedSuperRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedClienteRoute: AuthenticatedClienteRoute,
+  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedSuperRoute: AuthenticatedSuperRouteWithChildren,
 }
 
@@ -537,3 +558,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
