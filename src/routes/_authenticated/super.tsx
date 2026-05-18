@@ -1,6 +1,8 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Activity, Building2, CreditCard, LayoutDashboard, LayoutGrid, ListTree, Loader2, LogOut, Receipt } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getActingTenantId } from "@/lib/acting-tenant";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsSuperAdmin } from "@/hooks/use-super-admin";
@@ -15,6 +17,17 @@ function SuperLayoutRoute() {
   const auth = useAuth();
   const navigate = useNavigate();
   const sa = useIsSuperAdmin();
+  const [hasActing, setHasActing] = useState(false);
+  useEffect(() => {
+    const sync = () => setHasActing(!!getActingTenantId());
+    sync();
+    window.addEventListener("storage", sync);
+    window.addEventListener("acting-tenant-changed", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("acting-tenant-changed", sync);
+    };
+  }, []);
 
   useEffect(() => {
     if (!sa.isLoading && sa.data && !sa.data.isSuperAdmin) {
@@ -69,13 +82,15 @@ function SuperLayoutRoute() {
               </Link>
             );
           })}
-          <Link
-            to="/admin"
-            className="mt-6 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/60"
-          >
-            <CreditCard className="h-4 w-4" />
-            Volver al backoffice
-          </Link>
+          {hasActing && (
+            <Link
+              to="/admin"
+              className="mt-6 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/60"
+            >
+              <CreditCard className="h-4 w-4" />
+              Volver al backoffice
+            </Link>
+          )}
         </nav>
         <div className="border-t border-sidebar-border p-3">
           <p className="px-2 pb-2 text-[11px] text-sidebar-foreground/60">{auth.user?.email}</p>
