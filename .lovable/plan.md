@@ -1,66 +1,103 @@
-## Fase 4 — Onboarding de tenants + dashboard super admin + scaffolding de billing por tenant
+## Nueva Home — Atheria (plataforma multi-sistema, primer producto: gestión de cooperativas)
 
-Dejamos Mercado Pago "real" para más adelante. Esta fase cierra el loop de **alta de cooperativas sin intervención manual**, da al super admin un **dashboard de negocio**, y deja preparada en el panel super una **configuración de billing por tenant** (donde más adelante cada tenant cargará su token de MP) sin activar todavía el flujo de pagos.
+Reposicionamos la home: deja de ser la oficina virtual de "Coopecur" y pasa a ser el sitio público de **Atheria**, una plataforma que en el futuro albergará varios sistemas de gestión. El primero (y único hoy) es el **sistema para cooperativas de servicios**. La home habla a dos audiencias con caminos claros: cooperativas que evalúan contratar, y socios finales que quieren acceder a la oficina virtual de su cooperativa.
 
-## Qué se construye
+## Arquitectura de rutas (separadas, no anchors)
 
-### 1. Onboarding self-service de tenant — `/onboarding`
-- Nueva ruta `_authenticated/onboarding.tsx`.
-- Guard en `admin.tsx`: si el usuario no es super admin y no pertenece a ningún tenant → redirect a `/onboarding`.
-- Wizard de 3 pasos:
-  1. Datos de la cooperativa: nombre, slug (autogenerado desde el nombre, editable, validación de unicidad en vivo), provincia/localidad.
-  2. Plan: lista de `plans` activos con precios. Todos arrancan con trial de 14 días automático, independientemente del plan.
-  3. Confirmación + creación.
-- Server fn `createMyTenant({name, slug, planId, locality})`:
-  - Valida que el usuario NO tenga ya un tenant.
-  - Crea `tenants` (status='trial', `trial_ends_at = now + 14 days`, `billing_provider='mercadopago'`, `plan_id`).
-  - Crea `tenant_members(user_id=auth.uid(), role='admin')`.
-  - Loguea en `audit_log`.
-  - Devuelve el `tenant_id` para que el cliente refresque y entre a `/admin`.
+```
+src/routes/
+  index.tsx         -> / (home: hero + visión de plataforma + producto activo + CTAs duales)
+  funcionalidades.tsx -> /funcionalidades
+  casos.tsx          -> /casos
+  precios.tsx        -> /precios
+  contacto.tsx       -> /contacto
+  login.tsx          (ya existe)
+  register.tsx       (ya existe)
+  acceder.tsx       -> /acceder (buscador de cooperativa para socios)
+```
 
-### 2. Dashboard del super admin — `super.index.tsx`
-- Reemplazar el index actual de `/super` por un dashboard con:
-  - KPIs: tenants totales, activos, en trial, suspendidos/cancelados; trials por vencer en 7d; MRR estimado (suma `price_cents` de planes asignados a tenants con status='active'); eventos de webhook últimos 7d.
-  - Tabla "Tenants en riesgo": trials que vencen en ≤3 días + tenants en `past_due`.
-  - Tabla "Actividad reciente": últimos 10 `audit_log` cross-tenant + últimos 10 `subscription_events`.
-- Server fn `getSuperDashboard()` agregando todo en una sola llamada.
+Cada ruta con su `head()` propio (title, description, og:title, og:description). El header con nav compartido vive en un componente reutilizable montado desde `__root.tsx` para las rutas públicas (sin tocar `_authenticated`).
 
-### 3. Configuración de billing por tenant (scaffolding, sin activar MP)
-- Nueva pestaña en `super/tenants/$id` (o drawer desde la fila): **"Facturación"**.
-- Campos editables por el super admin:
-  - `billing_provider` (select: solo `mercadopago` por ahora, dejar el select listo para `stripe`).
-  - `mp_access_token` (text, write-only — al guardar se escribe en una tabla nueva `tenant_billing_credentials`; al leer solo muestra "configurado/no configurado", nunca el valor).
-  - `mp_webhook_secret` (idem).
-  - Botón "Probar credenciales" (deshabilitado, placeholder "Disponible cuando se active la integración").
-- Migración nueva tabla:
-  - `tenant_billing_credentials(tenant_id PK FK, provider text, access_token text, webhook_secret text, updated_at)`.
-  - RLS: solo super admin lee/escribe. **Nunca** accesible desde el lado del tenant.
-  - El billing provider sigue leyendo `process.env.MP_ACCESS_TOKEN` como fallback; cuando se active la fase real, leerá de esta tabla con prioridad.
-- Server fns en `super-admin.functions.ts`: `getTenantBillingConfig`, `upsertTenantBillingConfig` (ambas guard `is_super_admin`).
-- UI clara: "Los pagos están deshabilitados a nivel plataforma. Estos datos quedan guardados para cuando se active." (sin botones de checkout funcionales en `/admin/facturacion-suscripcion`, ya está así).
+## Identidad: Atheria
 
-### 4. Notificaciones automáticas al admin del tenant
-- Función SQL `notify_tenant_admins(_tenant uuid, _kind text, _title text, _body text, _link text)` análoga a `notify_member_user`: inserta en `notifications` para cada `tenant_members` con role='admin' del tenant.
-- Trigger en `tenants` para `UPDATE OF status` que llama a `notify_tenant_admins` con mensajes según el cambio (`trial→active`, `→past_due`, `→suspended`, `→cancelled`).
-- Al crear un tenant nuevo en onboarding: notificar al admin con "Bienvenido a la plataforma, tu trial vence el X".
+- Nombre/marca: **Atheria**.
+- Tagline: "Sistemas de gestión que crecen con tu organización".
+- Logo: marca tipográfica simple (texto) con un mark cuadrado azul. Genero un SVG inline; si después querés un logo dibujado lo iteramos.
+- Tono: institucional, confiable, sobrio. Se siente como software para entidades reguladas.
 
-### 5. Migración SQL
-- Asegurar índice único `tenants(slug)` (verificar; crear si falta).
-- Tabla `tenant_billing_credentials` + RLS super-only.
-- Función `notify_tenant_admins` + trigger en `tenants`.
+## Paleta y tokens (locked)
 
-## Fuera de alcance (Fase 5+)
-- Activación real de Mercado Pago (checkout + webhook que mueva status según pagos).
-- Cron de "trial por vencer en 3 días" (requiere pg_cron o scheduler externo).
-- Facturas SaaS descargables (PDF de cobro de la plataforma al tenant).
-- Multi-plan switching con prorrateo.
-- Dunning / recuperación de pagos fallidos.
+Aplicar a `src/styles.css` los tokens elegidos:
+- Primary: `#1a4a6e` (navy medio)
+- Primary deep: `#0c2340` (navy profundo, headers/footers)
+- Accent: `#2d8a9e` (teal)
+- Surface: `#f5f7fa` (fondo de secciones suaves)
+- Texto: navy profundo sobre blanco/surface
+
+Tipografía: Inter para body, Space Grotesk para títulos (importadas en CSS, no agrego deps).
+
+## Contenido de la home (/)
+
+1. **Header sticky**: logo Atheria + nav (Funcionalidades, Casos, Precios, Contacto) + botones derechos: "Acceder" (lleva a `/acceder`) y "Probar gratis" (lleva a `/register?next=/onboarding`).
+2. **Hero dual**: título grande "La plataforma para administrar tu cooperativa". Subtítulo menciona Atheria y que cooperativas es el primer sistema. Dos CTAs lado a lado:
+   - **Para cooperativas** → "Probar gratis 14 días" (azul primario).
+   - **Para socios** → "Acceder a mi cooperativa" (outline, lleva a `/acceder`).
+3. **Bloque "Una plataforma, muchos sistemas"**: 3 cards. La de "Cooperativas de servicios" en activo; otras 2 ("Mutuales", "Cooperativas de trabajo") en gris con badge "Próximamente". Esto ancla la visión multi-producto de Atheria.
+4. **Funcionalidades resumidas** (4-6 cards): Socios y suministros, Lecturas de medidores, Facturación masiva, Reclamos y cuadrillas, Cobranzas, Portal del socio. Cada card linkea a `/funcionalidades`.
+5. **Casos de uso** (preview): cooperativas de agua, electricidad, gas, internet rural. 4 íconos + texto breve, link a `/casos`.
+6. **Precios** (preview de 3 planes leyendo de tabla `plans`): mostrar nombre + precio + 3 features, badge "14 días gratis". Server fn `getPublicPlans()` sin auth. Link a `/precios`.
+7. **CTA final**: bloque navy con "Probar gratis" + "Agendar demo" (lleva a `/contacto`).
+8. **Footer**: marca Atheria + nav + nota "© Atheria. Cooperativas — primer sistema disponible."
+
+## Páginas hijas
+
+- **/funcionalidades**: detalle por módulo (socios, lecturas, facturación, reclamos, cobranzas, portal del socio), screenshots/ilustraciones esquemáticas, secciones largas.
+- **/casos**: 4 verticales (agua, electricidad, gas, internet rural) con descripción de cómo se usa el sistema en cada una.
+- **/precios**: tabla completa de planes (lee `plans` activos), comparador de features, FAQ de facturación, CTA de trial.
+- **/contacto**: form de contacto/demo (nombre, cooperativa, email, teléfono, mensaje) → server fn `submitContactRequest()` que inserta en nueva tabla `contact_requests` y notifica a super admins via `notifications`.
+- **/acceder**: buscador de cooperativa para socios. Input con búsqueda fuzzy por nombre/slug sobre `tenants` (server fn `searchPublicTenants(q)` que devuelve solo `name`, `slug`, `province` de tenants con status='active'). Click en resultado → `/login?tenant={slug}` (el slug se guarda y se usa para sugerir el tenant al loguearse; si el usuario solo pertenece a un tenant, es informativo).
+
+## Cambios de auth/redirect
+
+- `index.tsx` deja de hacer `Navigate` automático para usuarios autenticados — la home es pública siempre, con un badge "Volver a mi panel" arriba a la derecha si hay sesión.
+- `/login` y `/register` mantienen su lógica; agregar link "Volver al inicio" para no atrapar al visitante.
+
+## SQL nueva
+
+- Tabla `contact_requests(id, name, organization, email, phone, message, source, created_at, handled_by, handled_at)`.
+  - RLS: insert público (anónimo via server fn que usa `supabaseAdmin`), select solo super admin.
+- Trigger `contact_requests_notify` → inserta notification a todos los super admins cuando entra un lead.
+
+## Server functions nuevas
+
+- `getPublicPlans()` — sin auth, devuelve `plans` activos ordenados por precio.
+- `searchPublicTenants(q: string)` — sin auth, devuelve nombre/slug/provincia de tenants activos que matcheen.
+- `submitContactRequest(payload)` — sin auth, con validación Zod (todos los campos con min/max), rate limit simple (1 por minuto por IP — guardamos por ahora sin rate limit y lo dejamos como TODO).
+
+## Flujo de directions visuales (durante implementación)
+
+Antes de codear, aplico el ritual de redesign:
+1. Capturo screenshot de la home actual.
+2. Genero 3 design directions con paleta locked (`#0c2340 / #1a4a6e / #2d8a9e / #f5f7fa`), tipografía Space Grotesk + Inter, layout hero-grid. Las 3 varían en composición/densidad/jerarquía (ej: hero centrado vs hero split vs hero con dashboard mockup).
+3. Te muestro las 3 con `ask_questions type=prototype`, elegís una, implemento esa exactamente.
 
 ## Orden de implementación
-1. Migración: tabla `tenant_billing_credentials` + RLS, `notify_tenant_admins` + trigger en `tenants`, índice único `slug`.
-2. `createMyTenant` server fn + wizard `/onboarding` + guard de redirección desde `admin.tsx`.
-3. Dashboard super admin (`super.index.tsx`).
-4. Pestaña "Facturación" en super/tenants ($id) + server fns + UI con avisos de "no activado".
-5. QA: usuario nuevo → onboarding → /admin con trial countdown; super admin → dashboard + edición de credenciales del tenant (guardado y read-back como "configurado").
+
+1. Tokens en `src/styles.css` + fuentes (Inter + Space Grotesk).
+2. Componente `<MarketingHeader />` + `<MarketingFooter />` reutilizables.
+3. Generación de directions de la home → elegís una.
+4. Rehacer `/` con el direction elegido + bloque multi-sistema + preview de planes.
+5. Crear `/funcionalidades`, `/casos`, `/precios`, `/contacto`, `/acceder` con metadata propia.
+6. Server fns públicas + migración `contact_requests`.
+7. Quitar el redirect automático en `index.tsx`.
+8. QA: visitante anónimo navega, busca cooperativa, ve precios, manda contacto; super admin ve el lead en notifications.
+
+## Fuera de alcance
+
+- Subdominios por tenant (`miscoop.atheria.app`) — fase futura.
+- Multi-idioma.
+- Blog/recursos.
+- Páginas legales (términos, privacidad) — placeholders.
+- Logo profesional dibujado.
 
 ¿Avanzo así?
