@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useMyPadron } from "@/hooks/use-padron";
+import { useLinkMyMember, useMyPadron } from "@/hooks/use-padron";
 import { useMyInvoices } from "@/hooks/use-billing";
 import { useCreateClaim, useMyClaims } from "@/hooks/use-claims";
 import { InvoiceDetailDialog } from "@/components/client/invoice-detail-dialog";
@@ -52,6 +52,9 @@ function ClientPortal() {
             {data?.member ? `Socio N° ${data.member.member_number}` : "Bienvenido/a a su panel personal de Coopecur 2.0."}
           </p>
         </div>
+
+        {!isLoading && !data?.member && <LinkAccountCard />}
+
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -101,7 +104,7 @@ function ClientPortal() {
             {isLoading ? (
               <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
             ) : !data?.member ? (
-              <p className="text-sm text-muted-foreground">Tu cuenta aún no está vinculada a un socio. Contactá a la cooperativa para asociar tu padrón.</p>
+              <p className="text-sm text-muted-foreground">Vinculá tu cuenta al padrón para ver tus suministros.</p>
             ) : supplies.length === 0 ? (
               <p className="text-sm text-muted-foreground">No tenés suministros registrados.</p>
             ) : (
