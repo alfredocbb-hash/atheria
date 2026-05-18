@@ -11,7 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as PreciosRouteImport } from './routes/precios'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as FuncionalidadesRouteImport } from './routes/funcionalidades'
+import { Route as ContactoRouteImport } from './routes/contacto'
+import { Route as CasosRouteImport } from './routes/casos'
+import { Route as AccederRouteImport } from './routes/acceder'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSuperRouteImport } from './routes/_authenticated/super'
@@ -45,9 +50,34 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PreciosRoute = PreciosRouteImport.update({
+  id: '/precios',
+  path: '/precios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FuncionalidadesRoute = FuncionalidadesRouteImport.update({
+  id: '/funcionalidades',
+  path: '/funcionalidades',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactoRoute = ContactoRouteImport.update({
+  id: '/contacto',
+  path: '/contacto',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CasosRoute = CasosRouteImport.update({
+  id: '/casos',
+  path: '/casos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccederRoute = AccederRouteImport.update({
+  id: '/acceder',
+  path: '/acceder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -176,7 +206,12 @@ const ApiPublicBillingWebhookProviderRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acceder': typeof AccederRoute
+  '/casos': typeof CasosRoute
+  '/contacto': typeof ContactoRoute
+  '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
+  '/precios': typeof PreciosRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -202,7 +237,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acceder': typeof AccederRoute
+  '/casos': typeof CasosRoute
+  '/contacto': typeof ContactoRoute
+  '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
+  '/precios': typeof PreciosRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/cliente': typeof AuthenticatedClienteRoute
@@ -228,7 +268,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/acceder': typeof AccederRoute
+  '/casos': typeof CasosRoute
+  '/contacto': typeof ContactoRoute
+  '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
+  '/precios': typeof PreciosRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -256,7 +301,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/acceder'
+    | '/casos'
+    | '/contacto'
+    | '/funcionalidades'
     | '/login'
+    | '/precios'
     | '/register'
     | '/reset-password'
     | '/admin'
@@ -282,7 +332,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/acceder'
+    | '/casos'
+    | '/contacto'
+    | '/funcionalidades'
     | '/login'
+    | '/precios'
     | '/register'
     | '/reset-password'
     | '/cliente'
@@ -307,7 +362,12 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/acceder'
+    | '/casos'
+    | '/contacto'
+    | '/funcionalidades'
     | '/login'
+    | '/precios'
     | '/register'
     | '/reset-password'
     | '/_authenticated/admin'
@@ -335,7 +395,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AccederRoute: typeof AccederRoute
+  CasosRoute: typeof CasosRoute
+  ContactoRoute: typeof ContactoRoute
+  FuncionalidadesRoute: typeof FuncionalidadesRoute
   LoginRoute: typeof LoginRoute
+  PreciosRoute: typeof PreciosRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicBillingWebhookProviderRoute: typeof ApiPublicBillingWebhookProviderRoute
@@ -357,11 +422,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/precios': {
+      id: '/precios'
+      path: '/precios'
+      fullPath: '/precios'
+      preLoaderRoute: typeof PreciosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/funcionalidades': {
+      id: '/funcionalidades'
+      path: '/funcionalidades'
+      fullPath: '/funcionalidades'
+      preLoaderRoute: typeof FuncionalidadesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contacto': {
+      id: '/contacto'
+      path: '/contacto'
+      fullPath: '/contacto'
+      preLoaderRoute: typeof ContactoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/casos': {
+      id: '/casos'
+      path: '/casos'
+      fullPath: '/casos'
+      preLoaderRoute: typeof CasosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acceder': {
+      id: '/acceder'
+      path: '/acceder'
+      fullPath: '/acceder'
+      preLoaderRoute: typeof AccederRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -591,7 +691,12 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AccederRoute: AccederRoute,
+  CasosRoute: CasosRoute,
+  ContactoRoute: ContactoRoute,
+  FuncionalidadesRoute: FuncionalidadesRoute,
   LoginRoute: LoginRoute,
+  PreciosRoute: PreciosRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicBillingWebhookProviderRoute: ApiPublicBillingWebhookProviderRoute,
