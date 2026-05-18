@@ -151,7 +151,7 @@ function InvoicesTab() {
                           label="Anular"
                           title={`¿Anular factura ${i.invoice_number}?`}
                           description="La factura quedará marcada como anulada. Se conservará el historial."
-                          onConfirm={() => voidInv.mutate({ id: i.id })}
+                          onConfirm={() => voidInv.mutate(i.id)}
                         />
                       )}
                     </div>
