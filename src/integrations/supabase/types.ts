@@ -791,6 +791,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      link_my_member: {
+        Args: { _document_id: string; _member_number: string }
+        Returns: string
+      }
       log_audit: {
         Args: {
           _action: string
