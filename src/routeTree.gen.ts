@@ -19,6 +19,7 @@ import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedSuperTenantsRouteImport } from './routes/_authenticated/super.tenants'
+import { Route as AuthenticatedSuperPlanesRouteImport } from './routes/_authenticated/super.planes'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminTarifasRouteImport } from './routes/_authenticated/admin.tarifas'
 import { Route as AuthenticatedAdminSuministrosRouteImport } from './routes/_authenticated/admin.suministros'
@@ -77,6 +78,12 @@ const AuthenticatedSuperTenantsRoute =
   AuthenticatedSuperTenantsRouteImport.update({
     id: '/tenants',
     path: '/tenants',
+    getParentRoute: () => AuthenticatedSuperRoute,
+  } as any)
+const AuthenticatedSuperPlanesRoute =
+  AuthenticatedSuperPlanesRouteImport.update({
+    id: '/planes',
+    path: '/planes',
     getParentRoute: () => AuthenticatedSuperRoute,
   } as any)
 const AuthenticatedAdminUsuariosRoute =
@@ -150,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
@@ -169,6 +177,7 @@ export interface FileRoutesByTo {
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
@@ -191,6 +200,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/_authenticated/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/_authenticated/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/_authenticated/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/admin/suministros'
     | '/admin/tarifas'
     | '/admin/usuarios'
+    | '/super/planes'
     | '/super/tenants'
     | '/admin/'
     | '/api/public/billing-webhook/$provider'
@@ -232,6 +243,7 @@ export interface FileRouteTypes {
     | '/admin/suministros'
     | '/admin/tarifas'
     | '/admin/usuarios'
+    | '/super/planes'
     | '/super/tenants'
     | '/admin'
     | '/api/public/billing-webhook/$provider'
@@ -253,6 +265,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/suministros'
     | '/_authenticated/admin/tarifas'
     | '/_authenticated/admin/usuarios'
+    | '/_authenticated/super/planes'
     | '/_authenticated/super/tenants'
     | '/_authenticated/admin/'
     | '/api/public/billing-webhook/$provider'
@@ -337,6 +350,13 @@ declare module '@tanstack/react-router' {
       path: '/tenants'
       fullPath: '/super/tenants'
       preLoaderRoute: typeof AuthenticatedSuperTenantsRouteImport
+      parentRoute: typeof AuthenticatedSuperRoute
+    }
+    '/_authenticated/super/planes': {
+      id: '/_authenticated/super/planes'
+      path: '/planes'
+      fullPath: '/super/planes'
+      preLoaderRoute: typeof AuthenticatedSuperPlanesRouteImport
       parentRoute: typeof AuthenticatedSuperRoute
     }
     '/_authenticated/admin/usuarios': {
@@ -434,10 +454,12 @@ const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
 interface AuthenticatedSuperRouteChildren {
+  AuthenticatedSuperPlanesRoute: typeof AuthenticatedSuperPlanesRoute
   AuthenticatedSuperTenantsRoute: typeof AuthenticatedSuperTenantsRoute
 }
 
 const AuthenticatedSuperRouteChildren: AuthenticatedSuperRouteChildren = {
+  AuthenticatedSuperPlanesRoute: AuthenticatedSuperPlanesRoute,
   AuthenticatedSuperTenantsRoute: AuthenticatedSuperTenantsRoute,
 }
 
