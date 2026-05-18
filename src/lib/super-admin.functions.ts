@@ -302,3 +302,97 @@ export const getPlatformHealth = createServerFn({ method: "GET" })
       mercadopagoWebhookConfigured: !!process.env.MP_WEBHOOK_SECRET,
     };
   });
+
+// ---------- Super Dashboard ----------
+export const getSuperDashboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context as any;
+    await assertSuper(supabase);
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const inThreeDays = new Date(Date.now() + 3 * 86_400_000).toISOString();
+    const inSevenDays = new Date(Date.now() + 7 * 86_400_000).toISOString();
+
+    const [
+      { data: tenants },
+      { data: events7d, count: events7dCount },
+      { data: recentEvents },
+      { data: recentAudit },
+      { data: atRiskTrials },
+      { data: atRiskPastDue },
+    ] = await Promise.all([
+      supabase
+        .from("tenants")
+        .select("id, name, status, trial_ends_at, plan_id, plans(price_cents, currency)"),
+      supabase
+        .from("subscription_events")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", sevenDaysAgo),
+      supabase
+        .from("subscription_events")
+        .select("id, type, provider, created_at, tenants(name)")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("audit_log")
+        .select("id, action, entity_type, actor_email, created_at, tenant_id")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("tenants")
+        .select("id, name, status, trial_ends_at")
+        .eq("status", "trial")
+        .not("trial_ends_at", "is", null)
+        .lte("trial_ends_at", inThreeDays)
+        .order("trial_ends_at", { ascending: true })
+        .limit(20),
+      supabase
+        .from("tenants")
+        .select("id, name, status, trial_ends_at")
+        .in("status", ["past_due", "suspended"])
+        .limit(20),
+    ]);
+
+    const byStatus: Record<string, number> = {};
+    let mrrCents = 0;
+    let trialsEndingSoon = 0;
+    const now = Date.now();
+    const soon = now + 7 * 86_400_000;
+    for (const t of (tenants ?? []) as any[]) {
+      byStatus[t.status] = (byStatus[t.status] ?? 0) + 1;
+      if (t.status === "active" && t.plans?.price_cents) {
+        mrrCents += t.plans.price_cents;
+      }
+      if (
+        t.status === "trial" &&
+        t.trial_ends_at &&
+        new Date(t.trial_ends_at).getTime() <= soon &&
+        new Date(t.trial_ends_at).getTime() >= now
+      ) {
+        trialsEndingSoon += 1;
+      }
+    }
+
+    void events7d;
+    void inSevenDays;
+
+    return {
+      kpis: {
+        totalTenants: (tenants ?? []).length,
+        byStatus,
+        trialsEndingSoon,
+        mrrCents,
+        eventsLast7d: events7dCount ?? 0,
+      },
+      atRisk: [
+        ...((atRiskTrials ?? []) as any[]).map((t) => ({ ...t, reason: "trial_ending" as const })),
+        ...((atRiskPastDue ?? []) as any[]).map((t) => ({ ...t, reason: "billing" as const })),
+      ],
+      recentEvents: ((recentEvents ?? []) as any[]).map((e) => ({
+        ...e,
+        tenant_name: e.tenants?.name ?? null,
+      })),
+      recentAudit: recentAudit ?? [],
+    };
+  });
