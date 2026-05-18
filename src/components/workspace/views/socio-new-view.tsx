@@ -15,7 +15,7 @@ const Schema = z.object({
   member_number: z.string().min(1, "Requerido").max(40),
   full_name: z.string().min(1, "Requerido").max(160),
   document_id: z.string().max(40).optional(),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  email: z.union([z.literal(""), z.string().email("Email inválido")]).optional(),
   phone: z.string().max(40).optional(),
   status: z.enum(["active", "inactive", "suspended"]),
   notes: z.string().max(2000).optional(),
