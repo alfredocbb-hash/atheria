@@ -396,3 +396,59 @@ export const getSuperDashboard = createServerFn({ method: "GET" })
       recentAudit: recentAudit ?? [],
     };
   });
+
+// ---------- Per-tenant billing credentials (scaffolding) ----------
+export const getTenantBillingConfig = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ tenantId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context as any;
+    await assertSuper(supabase);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("tenant_billing_credentials")
+      .select("tenant_id, provider, access_token, webhook_secret, preapproval_plan_id, updated_at")
+      .eq("tenant_id", data.tenantId)
+      .maybeSingle();
+    return {
+      provider: row?.provider ?? "mercadopago",
+      hasAccessToken: !!row?.access_token,
+      hasWebhookSecret: !!row?.webhook_secret,
+      preapprovalPlanId: row?.preapproval_plan_id ?? null,
+      updatedAt: row?.updated_at ?? null,
+    };
+  });
+
+const UpsertBillingSchema = z.object({
+  tenantId: z.string().uuid(),
+  provider: z.enum(["mercadopago"]).default("mercadopago"),
+  accessToken: z.string().max(500).nullable().optional(),
+  webhookSecret: z.string().max(500).nullable().optional(),
+  preapprovalPlanId: z.string().max(120).nullable().optional(),
+});
+
+export const upsertTenantBillingConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => UpsertBillingSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await assertSuper(supabase);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const patch: Record<string, unknown> = {
+      tenant_id: data.tenantId,
+      provider: data.provider,
+      updated_by: userId,
+      updated_at: new Date().toISOString(),
+    };
+    if (data.accessToken !== undefined) patch.access_token = data.accessToken || null;
+    if (data.webhookSecret !== undefined) patch.webhook_secret = data.webhookSecret || null;
+    if (data.preapprovalPlanId !== undefined)
+      patch.preapproval_plan_id = data.preapprovalPlanId || null;
+
+    const { error } = await supabaseAdmin
+      .from("tenant_billing_credentials")
+      .upsert(patch, { onConflict: "tenant_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
