@@ -20,7 +20,17 @@ export function FacturaNewView({ tabId }: ViewComponentProps) {
   const [form, setForm] = useState<any>({
     supply_id: "", period_start: monthAgo, period_end: today, due_date: inTen, tax_rate: 0, notes: "",
   });
-  const submit = async () => { await gen.mutateAsync(form); ws.closeTab(tabId); };
+  const submit = async () => {
+    try {
+      await gen.mutateAsync({
+        ...form,
+        tax_rate: Math.min(1, Math.max(0, Number(form.tax_rate) || 0)),
+      });
+      ws.closeTab(tabId);
+    } catch {
+      // El hook muestra el error; mantener la pestaña abierta evita pantalla en blanco.
+    }
+  };
   return (
     <div className="space-y-4">
       <div>
