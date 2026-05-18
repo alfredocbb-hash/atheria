@@ -1,7 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Activity, Building2, CreditCard, LayoutDashboard, LayoutGrid, ListTree, Loader2, LogOut, Receipt } from "lucide-react";
-import { useState } from "react";
 import { getActingTenantId } from "@/lib/acting-tenant";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
