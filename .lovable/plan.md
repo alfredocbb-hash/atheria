@@ -1,55 +1,77 @@
-## Objetivo
+## Problema
 
-Aprovechar al máximo el área visible de cada pestaña del backoffice quitando los títulos redundantes y reubicando los botones de "Nuevo registro" en la **esquina superior derecha** de cada módulo, sobre la misma línea que los filtros.
+El super admin `alfredocbb@gmail.com` (rol `admin` + `super_admin`, sin `tenant_members`) queda atrapado en `/super`:
 
-## Alcance
+- `/admin` lo detecta como `isSuperAdmin && !hasTenant` y lo redirige a `/super`.
+- El link "Volver al backoffice" en `src/routes/_authenticated/super.tsx` lo manda a `/admin` → rebota a `/super`.
+- Aunque entrara, todas las RLS dependen de `current_tenant_id()`, que devuelve `NULL` para un usuario sin `tenant_members`, y los hooks del backoffice fallan.
 
-Todo el backoffice `/admin`:
+## Solución: "Acceder como tenant" (impersonación desde /super)
 
-- `admin.socios.tsx`
-- `admin.suministros.tsx`
-- `admin.facturacion.tsx` (subpestañas Facturas / Lecturas)
-- `admin.tarifas.tsx`
-- `admin.reclamos.tsx` (subpestañas Reclamos / Cuadrillas)
-- `admin.usuarios.tsx`
-- `admin.auditoria.tsx`
+El super admin elige un tenant en `/super/tenants`, queda "actuando como" ese tenant, y el backoffice opera como si fuera miembro admin de esa cooperativa.
 
-No se toca `/super`, `/cliente`, ni el sitio público de Atheria.
+### 1. Backend — overrideable `current_tenant_id()`
 
-## 1. Quitar títulos redundantes
+Migración:
 
-En cada página del módulo se elimina:
+- Modificar la función `public.current_tenant_id()` para que, si el caller es super admin, lea el tenant desde un GUC de sesión (`app.acting_tenant_id`). Si no hay GUC válido, cae al comportamiento actual (primer tenant_member).
 
-- El bloque superior con eyebrow (`PADRONES`, `OPERACIONES`, …), el `h1` con el nombre del módulo y la bajada descriptiva. La barra de pestañas del workspace ya muestra ícono + nombre.
-- El `CardHeader` con `CardTitle` que solo repite el nombre del módulo (ej. "Padrón", "Listado", "Tarifas vigentes", "Lecturas de medidores", "Listado de reclamos").
-
-Lo que queda es directamente la tarjeta con la tabla y, encima, una **barra de herramientas** compacta.
-
-## 2. Botones de "Nuevo …" en la esquina superior derecha
-
-Se introduce una barra de herramientas única por módulo dentro de la tarjeta:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ 🔍 buscar…   [filtro 1] [filtro 2]        [+ Nuevo …]   │
-├─────────────────────────────────────────────────────────┤
-│ tabla                                                   │
-└─────────────────────────────────────────────────────────┘
+```sql
+CREATE OR REPLACE FUNCTION public.current_tenant_id()
+RETURNS uuid
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = public AS $$
+DECLARE v uuid;
+BEGIN
+  IF public.is_super_admin() THEN
+    BEGIN
+      v := nullif(current_setting('app.acting_tenant_id', true), '')::uuid;
+    EXCEPTION WHEN others THEN v := NULL; END;
+    IF v IS NOT NULL THEN RETURN v; END IF;
+  END IF;
+  RETURN (SELECT tenant_id FROM public.tenant_members
+          WHERE user_id = auth.uid()
+          ORDER BY created_at ASC LIMIT 1);
+END$$;
 ```
 
-- Buscador + filtros alineados a la izquierda, en una sola fila con `flex-wrap` para mobile.
-- Botón "Nuevo …" pegado a la **esquina superior derecha** (`ml-auto`), tamaño `sm`, con el mismo ícono `Plus` que hoy.
-- En módulos con `Tabs` internos (Facturación, Reclamos), cada subpestaña tiene su propia barra con su propio botón en la esquina (ej. "Nueva factura" en Facturas, "Cargar lectura" en Lecturas, "Nuevo reclamo" en Reclamos, "Nueva cuadrilla" en Cuadrillas). El `TabsList` queda como única franja superior, sin título grande encima.
+- Nueva función `public.set_acting_tenant(uuid)` (`SECURITY DEFINER`) que valida `is_super_admin()` y hace `set_config('app.acting_tenant_id', $1::text, true)` (alcance de transacción).
 
-El comportamiento del botón **no cambia**: sigue llamando `ws.openView({...})` y abriendo la vista de alta como pestaña del workspace. Solo cambia su ubicación visual.
+### 2. Middleware — propagar tenant en cada request del super admin
 
-## 3. Detalles técnicos
+`src/integrations/supabase/auth-middleware.ts` no se toca (es read-only auto-generado). En su lugar:
 
-- Cambios localizados en los 7 archivos de ruta listados. No se crean componentes nuevos: la barra de herramientas es un simple `div className="flex flex-wrap items-center gap-2 p-3 border-b"` dentro de la `Card`.
-- No se modifican rutas, `routeTree.gen.ts`, hooks, server functions, esquema de base de datos, ni `MODULE_REGISTRY` / `VIEW_REGISTRY`.
-- No se modifican las vistas de alta/edición/detalle (`SocioNewView`, `FacturaDetailView`, etc.); siguen abriendo en pestañas como hoy.
-- Sin cambios en `/super`, `/cliente`, ni en las páginas públicas (`/`, `/funcionalidades`, etc.).
+- Nuevo `src/lib/acting-tenant.ts` con helpers cliente para leer/escribir `localStorage["lovable.actingTenantId"]`.
+- Nuevo `src/integrations/supabase/acting-tenant-attacher.ts` (middleware `.client`) que, si hay valor en localStorage, agrega header `x-acting-tenant: <uuid>` a cada serverFn.
+- Registrar el attacher en `src/start.ts` junto a `attachSupabaseAuth` en `functionMiddleware`.
+- En cada serverFn que use `requireSupabaseAuth` y opere sobre datos de tenant, llamar `await supabase.rpc("set_acting_tenant", { _tid: header })` al inicio del handler cuando el header está presente y el usuario es super. Para no tocar cada función, se añade un wrapper `withActingTenant(supabase)` invocado desde los handlers de mayor impacto: hooks de `padron`, `claims`, `billing`, `users`, `dashboard`, `notifications`.
 
-## Resultado
+### 3. UI — selector + estado "actuando como"
 
-Cada pestaña gana ~120 px de alto útil (≈ 3-4 filas extra de tabla visibles a 530 px de viewport) y la acción primaria queda anclada de forma predecible en la esquina superior derecha.
+- `src/routes/_authenticated/super.tenants.tsx`: agregar acción **"Acceder al backoffice"** por fila → guarda el `tenant_id` en localStorage, invalida React Query y navega a `/admin`.
+- `src/routes/_authenticated/admin.tsx`: si `isSuperAdmin`, dejar de redirigir a `/super`; en lugar de eso, si no hay `actingTenantId` mostrar una pantalla mínima "Elegí una cooperativa para gestionar" con botón a `/super/tenants`.
+- `src/components/layouts/admin-portal-layout.tsx`: barra superior cuando el usuario es super admin → chip "Actuando como: {tenant.name}" + botón "Salir" que limpia el localStorage e invalida queries.
+- `src/routes/_authenticated/super.tsx`: el link "Volver al backoffice" solo se muestra si hay `actingTenantId`.
+
+### 4. Login flow
+
+`src/routes/login.tsx`: si el usuario es super admin sin tenant propio y sin `actingTenantId`, redirigir a `/super` (no a `/admin`). El resto del flujo queda igual.
+
+## Archivos a tocar
+
+- `supabase/migrations/<nuevo>.sql` (current_tenant_id, set_acting_tenant)
+- `src/lib/acting-tenant.ts` (nuevo)
+- `src/integrations/supabase/acting-tenant-attacher.ts` (nuevo)
+- `src/start.ts`
+- `src/routes/_authenticated/admin.tsx`
+- `src/routes/_authenticated/super.tsx`
+- `src/routes/_authenticated/super.tenants.tsx`
+- `src/components/layouts/admin-portal-layout.tsx`
+- `src/routes/login.tsx`
+- Server fns con `requireSupabaseAuth` que tocan tablas tenant-scoped: invocación de `set_acting_tenant` al inicio del handler usando el header.
+
+## Fuera de alcance
+
+- No se modifican RLS (siguen usando `current_tenant_id()` y `is_super_admin()`).
+- No se cambia el onboarding ni la creación de tenants.
+- No se altera el portal `/cliente`.
