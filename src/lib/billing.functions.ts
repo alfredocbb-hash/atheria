@@ -131,7 +131,12 @@ const GenerateInvoiceInput = z.object({
   due_date: z.string().min(1),
   reading_current_id: z.string().uuid().optional(),
   tariff_id: z.string().uuid().optional(),
-  tax_rate: z.coerce.number().min(0).max(1).default(0),
+  tax_rate: z.preprocess((value) => {
+    const normalized = typeof value === "string" ? value.replace(",", ".") : value;
+    const numeric = Number(normalized);
+    if (!Number.isFinite(numeric)) return normalized;
+    return numeric > 1 ? numeric / 100 : numeric;
+  }, z.number().min(0).max(1)).default(0),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
 });
 
