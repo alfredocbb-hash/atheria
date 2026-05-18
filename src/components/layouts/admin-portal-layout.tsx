@@ -1,5 +1,7 @@
-import { Link } from "@tanstack/react-router";
-import { Building2, CreditCard, FileText, Gauge, LayoutDashboard, LogOut, Receipt, Server, ShieldCheck, Users, Wallet, Wrench } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Building2, CreditCard, FileText, Gauge, LayoutDashboard, LogOut, Receipt, Server, ShieldCheck, Users, Wallet, Wrench, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -9,10 +11,33 @@ import { WorkspaceTabsBar } from "@/components/workspace/workspace-tabs-bar";
 import { WorkspacePanels } from "@/components/workspace/workspace-panels";
 import { SubscriptionGate, SubscriptionGuard } from "@/components/billing/subscription-gate";
 import { useIsSuperAdmin } from "@/hooks/use-super-admin";
+import { clearActingTenant, getActingTenantId, getActingTenantName } from "@/lib/acting-tenant";
 
 export function AdminPortalLayout({ children }: { children?: React.ReactNode }) {
   const auth = useAuth();
   const sa = useIsSuperAdmin();
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [acting, setActing] = useState<{ id: string | null; name: string | null }>(() => ({
+    id: typeof window !== "undefined" ? getActingTenantId() : null,
+    name: typeof window !== "undefined" ? getActingTenantName() : null,
+  }));
+  useEffect(() => {
+    const sync = () => setActing({ id: getActingTenantId(), name: getActingTenantName() });
+    sync();
+    window.addEventListener("storage", sync);
+    window.addEventListener("acting-tenant-changed", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("acting-tenant-changed", sync);
+    };
+  }, []);
+  const stopActing = () => {
+    clearActingTenant();
+    window.dispatchEvent(new Event("acting-tenant-changed"));
+    qc.invalidateQueries();
+    navigate({ to: "/super" });
+  };
   const NAV: Array<{ label: string; icon: any; to?: string; enabled: boolean; adminOnly?: boolean }> = [
     { label: "Dashboard", icon: LayoutDashboard, to: "/admin", enabled: true },
     { label: "Usuarios y Roles", icon: ShieldCheck, to: "/admin/usuarios", enabled: true, adminOnly: true },
@@ -74,6 +99,20 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
             <span className="text-sm font-bold">Coopecur 2.0</span>
           </Link>
           <div className="flex items-center gap-1">
+            {sa.data?.isSuperAdmin && acting.id && (
+              <div className="mr-2 inline-flex items-center gap-1 rounded-md border bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+                <Server className="h-3.5 w-3.5" />
+                Actuando como: <span className="font-semibold">{acting.name ?? acting.id.slice(0, 8)}</span>
+                <button
+                  type="button"
+                  onClick={stopActing}
+                  className="ml-1 rounded p-0.5 hover:bg-amber-100 dark:hover:bg-amber-900"
+                  title="Salir de la cooperativa"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
             {sa.data?.isSuperAdmin && (
               <Link
                 to="/super/tenants"
