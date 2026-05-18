@@ -56,13 +56,27 @@ function LoginPage() {
 
   const onSubmit = async (values: LoginInput) => {
     setSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword(values);
+    const { data, error } = await supabase.auth.signInWithPassword(values);
     setSubmitting(false);
     if (error) {
       toast.error("No se pudo iniciar sesión", { description: error.message });
       return;
     }
     toast.success("Bienvenido/a a Coopecur 2.0");
+    // Red de seguridad: navegar de inmediato según los roles del usuario
+    // recién autenticado, sin esperar a que el listener de onAuthStateChange
+    // hidrate `rolesLoaded` en el hook useAuth.
+    const userId = data.session?.user.id;
+    let isStaff = false;
+    if (userId) {
+      const { data: roleRows } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+      const roles = (roleRows ?? []).map((r) => r.role as string);
+      isStaff = roles.includes("admin") || roles.includes("operator");
+    }
+    navigate({ to: isStaff ? "/admin" : "/cliente", replace: true });
   };
 
   const onGoogle = async () => {
