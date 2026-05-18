@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useTariffs, useToggleTariff } from "@/hooks/use-billing";
+import { useTariffs, useToggleTariff, useDeleteTariff } from "@/hooks/use-billing";
+import { DeleteButton } from "@/components/admin/delete-button";
 import { useEnsureTab, useWorkspace } from "@/components/workspace/workspace-context";
 
 export const Route = createFileRoute("/_authenticated/admin/tarifas")({
@@ -27,6 +28,7 @@ export function TarifasPage() {
 
   const { data: tariffs = [], isLoading } = useTariffs();
   const toggle = useToggleTariff();
+  const del = useDeleteTariff();
   const ws = useWorkspace();
 
   return (
@@ -69,12 +71,13 @@ export function TarifasPage() {
                   <TableHead className="text-right">$/unidad</TableHead>
                   <TableHead>Vigencia</TableHead>
                   <TableHead>Activa</TableHead>
+                  <TableHead className="w-12 text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tariffs.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
                       Sin tarifas cargadas.
                     </TableCell>
                   </TableRow>
@@ -96,6 +99,14 @@ export function TarifasPage() {
                       <Switch
                         checked={t.is_active}
                         onCheckedChange={(v) => toggle.mutate({ id: t.id, is_active: v })}
+                      />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DeleteButton
+                        iconOnly
+                        title={`¿Eliminar tarifa "${t.name}"?`}
+                        description="No se podrá eliminar si está siendo usada por alguna factura."
+                        onConfirm={() => del.mutate(t.id)}
                       />
                     </TableCell>
                   </TableRow>
