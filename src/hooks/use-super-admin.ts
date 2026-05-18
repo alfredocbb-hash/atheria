@@ -1,0 +1,109 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import {
+  amISuperAdmin,
+  createTenant,
+  getPlatformHealth,
+  listPlansAdmin,
+  listSubscriptionEvents,
+  listTenantMembers,
+  listTenants,
+  togglePlanActive,
+  updateTenant,
+  upsertPlan,
+} from "@/lib/super-admin.functions";
+
+export function useIsSuperAdmin() {
+  const fn = useServerFn(amISuperAdmin);
+  return useQuery({
+    queryKey: ["super", "whoami"],
+    queryFn: () => fn({}),
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useTenantsList() {
+  const fn = useServerFn(listTenants);
+  return useQuery({ queryKey: ["super", "tenants"], queryFn: () => fn({}) });
+}
+
+export function useTenantMembers(tenantId: string | null) {
+  const fn = useServerFn(listTenantMembers);
+  return useQuery({
+    queryKey: ["super", "tenant-members", tenantId],
+    queryFn: () => fn({ data: { tenantId: tenantId! } }),
+    enabled: !!tenantId,
+  });
+}
+
+export function useUpdateTenant() {
+  const fn = useServerFn(updateTenant);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["super", "tenants"] });
+      toast.success("Tenant actualizado");
+    },
+    onError: (e: Error) => toast.error("Error", { description: e.message }),
+  });
+}
+
+export function useCreateTenant() {
+  const fn = useServerFn(createTenant);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["super", "tenants"] });
+      toast.success("Tenant creado");
+    },
+    onError: (e: Error) => toast.error("No se pudo crear", { description: e.message }),
+  });
+}
+
+export function usePlansAdmin() {
+  const fn = useServerFn(listPlansAdmin);
+  return useQuery({ queryKey: ["super", "plans"], queryFn: () => fn({}) });
+}
+
+export function useUpsertPlan() {
+  const fn = useServerFn(upsertPlan);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["super", "plans"] });
+      toast.success("Plan guardado");
+    },
+    onError: (e: Error) => toast.error("Error", { description: e.message }),
+  });
+}
+
+export function useTogglePlanActive() {
+  const fn = useServerFn(togglePlanActive);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { id: string; is_active: boolean }) => fn({ data }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["super", "plans"] }),
+    onError: (e: Error) => toast.error("Error", { description: e.message }),
+  });
+}
+
+export function useSubscriptionEvents(filters: {
+  tenantId?: string | null;
+  type?: string | null;
+}) {
+  const fn = useServerFn(listSubscriptionEvents);
+  return useQuery({
+    queryKey: ["super", "events", filters],
+    queryFn: () => fn({ data: { ...filters, limit: 100 } }),
+  });
+}
+
+export function usePlatformHealth() {
+  const fn = useServerFn(getPlatformHealth);
+  return useQuery({ queryKey: ["super", "health"], queryFn: () => fn({}) });
+}
