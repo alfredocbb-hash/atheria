@@ -448,7 +448,7 @@ export const upsertTenantBillingConfig = createServerFn({ method: "POST" })
 
     const { error } = await supabaseAdmin
       .from("tenant_billing_credentials")
-      .upsert(patch, { onConflict: "tenant_id" });
+      .upsert(patch as any, { onConflict: "tenant_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
