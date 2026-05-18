@@ -387,7 +387,7 @@ export const listSuppliesLite = createServerFn({ method: "GET" })
     await ensureStaff(supabase, userId);
     const { data, error } = await supabase
       .from("supplies")
-      .select("id, supply_number, service_type, member:members(full_name), meters(id, serial_number)")
+      .select("id, supply_number, service_type, tariff_category, status, member_id, member:members(id, full_name, member_number), meters(id, serial_number)")
       .order("supply_number")
       .limit(500);
     if (error) throw new Error(error.message);
