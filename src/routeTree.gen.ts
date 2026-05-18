@@ -20,6 +20,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedSuperTenantsRouteImport } from './routes/_authenticated/super.tenants'
 import { Route as AuthenticatedSuperPlanesRouteImport } from './routes/_authenticated/super.planes'
+import { Route as AuthenticatedSuperHealthRouteImport } from './routes/_authenticated/super.health'
 import { Route as AuthenticatedSuperEventosRouteImport } from './routes/_authenticated/super.eventos'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminTarifasRouteImport } from './routes/_authenticated/admin.tarifas'
@@ -85,6 +86,12 @@ const AuthenticatedSuperPlanesRoute =
   AuthenticatedSuperPlanesRouteImport.update({
     id: '/planes',
     path: '/planes',
+    getParentRoute: () => AuthenticatedSuperRoute,
+  } as any)
+const AuthenticatedSuperHealthRoute =
+  AuthenticatedSuperHealthRouteImport.update({
+    id: '/health',
+    path: '/health',
     getParentRoute: () => AuthenticatedSuperRoute,
   } as any)
 const AuthenticatedSuperEventosRoute =
@@ -165,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/super/health': typeof AuthenticatedSuperHealthRoute
   '/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
@@ -186,6 +194,7 @@ export interface FileRoutesByTo {
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/super/health': typeof AuthenticatedSuperHealthRoute
   '/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
@@ -210,6 +219,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/_authenticated/super/health': typeof AuthenticatedSuperHealthRoute
   '/_authenticated/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/_authenticated/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
@@ -234,6 +244,7 @@ export interface FileRouteTypes {
     | '/admin/tarifas'
     | '/admin/usuarios'
     | '/super/eventos'
+    | '/super/health'
     | '/super/planes'
     | '/super/tenants'
     | '/admin/'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/admin/tarifas'
     | '/admin/usuarios'
     | '/super/eventos'
+    | '/super/health'
     | '/super/planes'
     | '/super/tenants'
     | '/admin'
@@ -278,6 +290,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/tarifas'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/super/eventos'
+    | '/_authenticated/super/health'
     | '/_authenticated/super/planes'
     | '/_authenticated/super/tenants'
     | '/_authenticated/admin/'
@@ -370,6 +383,13 @@ declare module '@tanstack/react-router' {
       path: '/planes'
       fullPath: '/super/planes'
       preLoaderRoute: typeof AuthenticatedSuperPlanesRouteImport
+      parentRoute: typeof AuthenticatedSuperRoute
+    }
+    '/_authenticated/super/health': {
+      id: '/_authenticated/super/health'
+      path: '/health'
+      fullPath: '/super/health'
+      preLoaderRoute: typeof AuthenticatedSuperHealthRouteImport
       parentRoute: typeof AuthenticatedSuperRoute
     }
     '/_authenticated/super/eventos': {
@@ -475,12 +495,14 @@ const AuthenticatedAdminRouteWithChildren =
 
 interface AuthenticatedSuperRouteChildren {
   AuthenticatedSuperEventosRoute: typeof AuthenticatedSuperEventosRoute
+  AuthenticatedSuperHealthRoute: typeof AuthenticatedSuperHealthRoute
   AuthenticatedSuperPlanesRoute: typeof AuthenticatedSuperPlanesRoute
   AuthenticatedSuperTenantsRoute: typeof AuthenticatedSuperTenantsRoute
 }
 
 const AuthenticatedSuperRouteChildren: AuthenticatedSuperRouteChildren = {
   AuthenticatedSuperEventosRoute: AuthenticatedSuperEventosRoute,
+  AuthenticatedSuperHealthRoute: AuthenticatedSuperHealthRoute,
   AuthenticatedSuperPlanesRoute: AuthenticatedSuperPlanesRoute,
   AuthenticatedSuperTenantsRoute: AuthenticatedSuperTenantsRoute,
 }
