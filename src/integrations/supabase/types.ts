@@ -179,6 +179,45 @@ export type Database = {
           },
         ]
       }
+      contact_requests: {
+        Row: {
+          created_at: string
+          email: string
+          handled_at: string | null
+          handled_by: string | null
+          id: string
+          message: string
+          name: string
+          organization: string
+          phone: string | null
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          message: string
+          name: string
+          organization: string
+          phone?: string | null
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          handled_at?: string | null
+          handled_by?: string | null
+          id?: string
+          message?: string
+          name?: string
+          organization?: string
+          phone?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       crews: {
         Row: {
           created_at: string
@@ -552,7 +591,7 @@ export type Database = {
           link: string | null
           metadata: Json
           read_at: string | null
-          tenant_id: string
+          tenant_id: string | null
           title: string
           user_id: string
         }
@@ -564,7 +603,7 @@ export type Database = {
           link?: string | null
           metadata?: Json
           read_at?: string | null
-          tenant_id: string
+          tenant_id?: string | null
           title: string
           user_id: string
         }
@@ -576,7 +615,7 @@ export type Database = {
           link?: string | null
           metadata?: Json
           read_at?: string | null
-          tenant_id?: string
+          tenant_id?: string | null
           title?: string
           user_id?: string
         }
