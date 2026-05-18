@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, FileText, Gauge, LayoutDashboard, LogOut, Receipt, ShieldCheck, Users, Wallet, Wrench } from "lucide-react";
+import { Building2, CreditCard, FileText, Gauge, LayoutDashboard, LogOut, Receipt, ShieldCheck, Users, Wallet, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { WorkspaceProvider } from "@/components/workspace/workspace-context";
 import { WorkspaceTabsBar } from "@/components/workspace/workspace-tabs-bar";
 import { WorkspacePanels } from "@/components/workspace/workspace-panels";
+import { SubscriptionGate, SubscriptionGuard } from "@/components/billing/subscription-gate";
 
 export function AdminPortalLayout({ children }: { children?: React.ReactNode }) {
   const auth = useAuth();
@@ -19,6 +20,7 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
     { label: "Tarifas", icon: Wallet, to: "/admin/tarifas", enabled: true },
     { label: "Reclamos", icon: Wrench, to: "/admin/reclamos", enabled: true },
     { label: "Auditoría", icon: FileText, to: "/admin/auditoria", enabled: true, adminOnly: true },
+    { label: "Suscripción", icon: CreditCard, to: "/admin/facturacion-suscripcion", enabled: true, adminOnly: true },
   ];
   return (
     <div className="flex min-h-screen bg-secondary/40">
@@ -74,6 +76,8 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
             <Button variant="ghost" size="sm" className="md:hidden" onClick={() => auth.signOut()}><LogOut className="h-4 w-4" /></Button>
           </div>
         </header>
+        <SubscriptionGate />
+        <SubscriptionGuard>
         <WorkspaceProvider>
           {/* Route-side triggers (return null) — must live inside the
               provider so they can call useEnsureTab() to open/focus tabs
@@ -84,6 +88,7 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
             <WorkspacePanels />
           </main>
         </WorkspaceProvider>
+        </SubscriptionGuard>
       </div>
     </div>
   );

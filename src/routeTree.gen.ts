@@ -22,8 +22,10 @@ import { Route as AuthenticatedAdminTarifasRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminSuministrosRouteImport } from './routes/_authenticated/admin.suministros'
 import { Route as AuthenticatedAdminSociosRouteImport } from './routes/_authenticated/admin.socios'
 import { Route as AuthenticatedAdminReclamosRouteImport } from './routes/_authenticated/admin.reclamos'
+import { Route as AuthenticatedAdminFacturacionSuscripcionRouteImport } from './routes/_authenticated/admin.facturacion-suscripcion'
 import { Route as AuthenticatedAdminFacturacionRouteImport } from './routes/_authenticated/admin.facturacion'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
+import { Route as ApiPublicBillingWebhookProviderRouteImport } from './routes/api/public/billing-webhook.$provider'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -94,6 +96,12 @@ const AuthenticatedAdminReclamosRoute =
     path: '/reclamos',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminFacturacionSuscripcionRoute =
+  AuthenticatedAdminFacturacionSuscripcionRouteImport.update({
+    id: '/facturacion-suscripcion',
+    path: '/facturacion-suscripcion',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminFacturacionRoute =
   AuthenticatedAdminFacturacionRouteImport.update({
     id: '/facturacion',
@@ -106,6 +114,12 @@ const AuthenticatedAdminAuditoriaRoute =
     path: '/auditoria',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const ApiPublicBillingWebhookProviderRoute =
+  ApiPublicBillingWebhookProviderRouteImport.update({
+    id: '/api/public/billing-webhook/$provider',
+    path: '/api/public/billing-webhook/$provider',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,12 +130,14 @@ export interface FileRoutesByFullPath {
   '/cliente': typeof AuthenticatedClienteRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
+  '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -131,12 +147,14 @@ export interface FileRoutesByTo {
   '/cliente': typeof AuthenticatedClienteRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
+  '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,12 +167,14 @@ export interface FileRoutesById {
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
+  '/_authenticated/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/_authenticated/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/_authenticated/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/_authenticated/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/_authenticated/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -167,12 +187,14 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/admin/auditoria'
     | '/admin/facturacion'
+    | '/admin/facturacion-suscripcion'
     | '/admin/reclamos'
     | '/admin/socios'
     | '/admin/suministros'
     | '/admin/tarifas'
     | '/admin/usuarios'
     | '/admin/'
+    | '/api/public/billing-webhook/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -182,12 +204,14 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/admin/auditoria'
     | '/admin/facturacion'
+    | '/admin/facturacion-suscripcion'
     | '/admin/reclamos'
     | '/admin/socios'
     | '/admin/suministros'
     | '/admin/tarifas'
     | '/admin/usuarios'
     | '/admin'
+    | '/api/public/billing-webhook/$provider'
   id:
     | '__root__'
     | '/'
@@ -199,12 +223,14 @@ export interface FileRouteTypes {
     | '/_authenticated/cliente'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/facturacion'
+    | '/_authenticated/admin/facturacion-suscripcion'
     | '/_authenticated/admin/reclamos'
     | '/_authenticated/admin/socios'
     | '/_authenticated/admin/suministros'
     | '/_authenticated/admin/tarifas'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/admin/'
+    | '/api/public/billing-webhook/$provider'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -213,6 +239,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicBillingWebhookProviderRoute: typeof ApiPublicBillingWebhookProviderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -308,6 +335,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminReclamosRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/facturacion-suscripcion': {
+      id: '/_authenticated/admin/facturacion-suscripcion'
+      path: '/facturacion-suscripcion'
+      fullPath: '/admin/facturacion-suscripcion'
+      preLoaderRoute: typeof AuthenticatedAdminFacturacionSuscripcionRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/facturacion': {
       id: '/_authenticated/admin/facturacion'
       path: '/facturacion'
@@ -322,12 +356,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuditoriaRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/api/public/billing-webhook/$provider': {
+      id: '/api/public/billing-webhook/$provider'
+      path: '/api/public/billing-webhook/$provider'
+      fullPath: '/api/public/billing-webhook/$provider'
+      preLoaderRoute: typeof ApiPublicBillingWebhookProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
   AuthenticatedAdminFacturacionRoute: typeof AuthenticatedAdminFacturacionRoute
+  AuthenticatedAdminFacturacionSuscripcionRoute: typeof AuthenticatedAdminFacturacionSuscripcionRoute
   AuthenticatedAdminReclamosRoute: typeof AuthenticatedAdminReclamosRoute
   AuthenticatedAdminSociosRoute: typeof AuthenticatedAdminSociosRoute
   AuthenticatedAdminSuministrosRoute: typeof AuthenticatedAdminSuministrosRoute
@@ -339,6 +381,8 @@ interface AuthenticatedAdminRouteChildren {
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
   AuthenticatedAdminFacturacionRoute: AuthenticatedAdminFacturacionRoute,
+  AuthenticatedAdminFacturacionSuscripcionRoute:
+    AuthenticatedAdminFacturacionSuscripcionRoute,
   AuthenticatedAdminReclamosRoute: AuthenticatedAdminReclamosRoute,
   AuthenticatedAdminSociosRoute: AuthenticatedAdminSociosRoute,
   AuthenticatedAdminSuministrosRoute: AuthenticatedAdminSuministrosRoute,
@@ -370,6 +414,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicBillingWebhookProviderRoute: ApiPublicBillingWebhookProviderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
