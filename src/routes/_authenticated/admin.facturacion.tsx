@@ -1,16 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEnsureTab, useWorkspace } from "@/components/workspace/workspace-context";
 import { useEffect, useState } from "react";
-import { Loader2, Plus, FileText, Wallet, Gauge } from "lucide-react";
+import { Loader2, Plus, FileText, Gauge } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useInvoices, useReadings, useTariffs, useToggleTariff } from "@/hooks/use-billing";
+import { useInvoices, useReadings } from "@/hooks/use-billing";
 
 export const Route = createFileRoute("/_authenticated/admin/facturacion")({
   head: () => ({ meta: [{ title: "Facturación — Coopecur 2.0" }] }),
@@ -34,54 +33,11 @@ export function FacturacionPage() {
         <TabsList>
           <TabsTrigger value="invoices"><FileText className="mr-2 h-4 w-4" />Facturas</TabsTrigger>
           <TabsTrigger value="readings"><Gauge className="mr-2 h-4 w-4" />Lecturas</TabsTrigger>
-          <TabsTrigger value="tariffs"><Wallet className="mr-2 h-4 w-4" />Tarifas</TabsTrigger>
         </TabsList>
         <TabsContent value="invoices"><InvoicesTab /></TabsContent>
         <TabsContent value="readings"><ReadingsTab /></TabsContent>
-        <TabsContent value="tariffs"><TariffsTab /></TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-function TariffsTab() {
-  const { data: tariffs = [], isLoading } = useTariffs();
-  const toggle = useToggleTariff();
-  const ws = useWorkspace();
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Tarifas vigentes</CardTitle>
-        <Button size="sm" onClick={() => ws.openView({ id: "view:tarifa.new", viewKey: "tarifa.new", title: "Nueva tarifa", iconKey: "wallet", parentModule: "facturacion" })}>
-          <Plus className="mr-1 h-4 w-4" />Nueva tarifa
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /> : (
-          <Table>
-            <TableHeader><TableRow>
-              <TableHead>Nombre</TableHead><TableHead>Servicio</TableHead><TableHead>Categoría</TableHead>
-              <TableHead className="text-right">Cargo fijo</TableHead><TableHead className="text-right">$/unidad</TableHead>
-              <TableHead>Vigencia</TableHead><TableHead>Activa</TableHead>
-            </TableRow></TableHeader>
-            <TableBody>
-              {tariffs.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">Sin tarifas cargadas.</TableCell></TableRow>}
-              {tariffs.map((t: any) => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.name}</TableCell>
-                  <TableCell><Badge variant="outline">{t.service_type}</Badge></TableCell>
-                  <TableCell className="text-muted-foreground">{t.category ?? "—"}</TableCell>
-                  <TableCell className="text-right">{fmtMoney(t.fixed_charge, t.currency)}</TableCell>
-                  <TableCell className="text-right">{fmtMoney(t.unit_price, t.currency)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{t.valid_from}{t.valid_to ? ` → ${t.valid_to}` : ""}</TableCell>
-                  <TableCell><Switch checked={t.is_active} onCheckedChange={(v) => toggle.mutate({ id: t.id, is_active: v })} /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 
