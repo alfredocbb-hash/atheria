@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { FileText, Gauge, Plus, Receipt, Wallet, Wrench, Users, type LucideIcon } from "lucide-react";
+import { FileText, Gauge, Pencil, Plus, Receipt, Wallet, Wrench, Users, type LucideIcon } from "lucide-react";
 import { SocioNewView } from "./views/socio-new-view";
 import { SuministroNewView } from "./views/suministro-new-view";
 import { SuministroMetersView } from "./views/suministro-meters-view";
@@ -17,6 +17,7 @@ export interface ViewComponentProps {
 
 export const VIEW_REGISTRY: Record<string, ComponentType<ViewComponentProps>> = {
   "socio.new": SocioNewView,
+  "socio.edit": SocioNewView,
   "suministro.new": SuministroNewView,
   "suministro.meters": SuministroMetersView,
   "tarifa.new": TarifaNewView,
@@ -29,6 +30,7 @@ export const VIEW_REGISTRY: Record<string, ComponentType<ViewComponentProps>> = 
 
 export const ICONS: Record<string, LucideIcon> = {
   plus: Plus,
+  pencil: Pencil,
   gauge: Gauge,
   receipt: Receipt,
   wallet: Wallet,
