@@ -2,20 +2,41 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function isStaff(supabase: any, userId: string) {
-  const [{ data: a }, { data: o }] = await Promise.all([
-    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
-    supabase.rpc("has_role", { _user_id: userId, _role: "operator" }),
+async function getTenantId(supabase: any): Promise<string> {
+  const { data, error } = await supabase.rpc("current_tenant_id");
+  if (error) throw new Error(`Tenant: ${error.message}`);
+  if (!data) throw new Error("No tenés una cooperativa activa");
+  return data as string;
+}
+async function isStaff(supabase: any, _userId: string): Promise<boolean> {
+  try {
+    const tid = await getTenantId(supabase);
+    const [{ data: ok }, { data: sa }] = await Promise.all([
+      supabase.rpc("is_tenant_member", { _tenant: tid, _role: "staff" }),
+      supabase.rpc("is_super_admin"),
+    ]);
+    return !!ok || !!sa;
+  } catch {
+    return false;
+  }
+}
+async function ensureStaff(supabase: any, _userId: string): Promise<string> {
+  const tid = await getTenantId(supabase);
+  const [{ data: ok }, { data: sa }] = await Promise.all([
+    supabase.rpc("is_tenant_member", { _tenant: tid, _role: "staff" }),
+    supabase.rpc("is_super_admin"),
   ]);
-  return !!a || !!o;
+  if (!ok && !sa) throw new Error("Forbidden: solo personal autorizado");
+  return tid;
 }
-async function ensureStaff(supabase: any, userId: string) {
-  if (!(await isStaff(supabase, userId))) throw new Error("Forbidden: solo personal autorizado");
-}
-
-async function ensureAdmin(supabase: any, userId: string) {
-  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (!isAdmin) throw new Error("Forbidden: requiere rol de administrador");
+async function ensureAdmin(supabase: any, _userId: string): Promise<string> {
+  const tid = await getTenantId(supabase);
+  const [{ data: ok }, { data: sa }] = await Promise.all([
+    supabase.rpc("is_tenant_member", { _tenant: tid, _role: "admin" }),
+    supabase.rpc("is_super_admin"),
+  ]);
+  if (!ok && !sa) throw new Error("Forbidden: requiere rol de administrador");
+  return tid;
 }
 
 const Category = z.enum(["water_outage", "gas_outage", "electricity_outage", "leak", "meter", "billing", "other"]);
@@ -115,6 +136,7 @@ export const createClaim = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => ClaimCreateInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const tenant_id = await getTenantId(supabase);
     // If not staff, force member_id to belong to caller
     if (!(await isStaff(supabase, userId))) {
       const { data: m } = await supabase
@@ -137,6 +159,7 @@ export const createClaim = createServerFn({ method: "POST" })
       location: data.location || null,
       opened_by: userId,
       status: "open" as const,
+      tenant_id,
     };
     const { data: row, error } = await supabase.from("claims").insert(payload).select().single();
     if (error) throw new Error(error.message);
@@ -221,12 +244,14 @@ export const addClaimComment = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const tenant_id = await getTenantId(supabase);
     const staff = await isStaff(supabase, userId);
     const payload = {
       claim_id: data.claim_id,
       body: data.body,
       author_id: userId,
       is_internal: staff ? data.is_internal : false,
+      tenant_id,
     };
     const { data: row, error } = await supabase.from("claim_comments").insert(payload).select().single();
     if (error) throw new Error(error.message);
@@ -261,8 +286,8 @@ export const upsertCrew = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await ensureStaff(supabase, userId);
-    const payload = { ...data.patch, notes: data.patch.notes || null };
+    const tenant_id = await ensureStaff(supabase, userId);
+    const payload = { ...data.patch, notes: data.patch.notes || null, tenant_id };
     if (data.id) {
       const { error } = await supabase.from("crews").update(payload).eq("id", data.id);
       if (error) throw new Error(error.message);
@@ -301,7 +326,7 @@ export const createWorkOrder = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => WOInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await ensureStaff(supabase, userId);
+    const tenant_id = await ensureStaff(supabase, userId);
     const payload = {
       claim_id: data.claim_id,
       crew_id: data.crew_id,
@@ -309,6 +334,7 @@ export const createWorkOrder = createServerFn({ method: "POST" })
       notes: data.notes || null,
       created_by: userId,
       status: "scheduled" as const,
+      tenant_id,
     };
     const { data: row, error } = await supabase.from("work_orders").insert(payload).select().single();
     if (error) throw new Error(error.message);
