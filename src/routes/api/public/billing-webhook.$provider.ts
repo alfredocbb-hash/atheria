@@ -52,7 +52,7 @@ export const Route = createFileRoute("/api/public/billing-webhook/$provider")({
           if (mapped.subscriptionId) update.billing_subscription_id = mapped.subscriptionId;
           if (mapped.customerId) update.billing_customer_id = mapped.customerId;
           if (Object.keys(update).length > 0) {
-            await supabaseAdmin.from("tenants").update(update).eq("id", mapped.tenantId);
+            await supabaseAdmin.from("tenants").update(update as never).eq("id", mapped.tenantId);
           }
         }
 
