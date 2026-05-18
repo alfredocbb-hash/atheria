@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEnsureTab } from "@/components/workspace/workspace-context";
 import { useEffect, useState } from "react";
-import { Loader2, MoreHorizontal, Search, ShieldCheck } from "lucide-react";
+import { Loader2, MoreHorizontal, Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,29 +66,9 @@ export function AdminUsersPage() {
   }
 
   return (
-    
-      <div className="space-y-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              Administración
-            </p>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Usuarios y Roles
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Gestioná los permisos del personal y los clientes registrados.
-            </p>
-          </div>
-          <Badge variant="outline" className="gap-1">
-            <ShieldCheck className="h-3 w-3" /> Solo admin
-          </Badge>
-        </div>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Padrón de usuarios</CardTitle>
-            <div className="relative mt-2 max-w-sm">
+    <Card>
+      <div className="flex flex-wrap items-center gap-2 border-b p-3">
+        <div className="relative min-w-[220px] flex-1">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por email, nombre o documento…"
@@ -96,9 +76,9 @@ export function AdminUsersPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
-            </div>
-          </CardHeader>
-          <CardContent>
+        </div>
+      </div>
+      <CardContent className="pt-4">
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -194,9 +174,7 @@ export function AdminUsersPage() {
               </Table>
             </div>
           </CardContent>
-        </Card>
-      </div>
-    
+    </Card>
   );
 }
 
