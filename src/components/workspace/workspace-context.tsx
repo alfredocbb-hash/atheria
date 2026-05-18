@@ -212,10 +212,11 @@ export function useWorkspace(): WorkspaceState {
 
 export function useEnsureTab(key: ModuleKey) {
   const ws = useContext(WorkspaceCtx);
+  const wsRef = useRef(ws);
+  wsRef.current = ws;
   useEffect(() => {
-    if (!ws) return;
-    ws.openModule(key, { focus: true });
-  }, [ws, key]);
+    wsRef.current?.openModule(key, { focus: true });
+  }, [key]);
 }
 
 /** Hook for view components to find their own tab id from context. */
