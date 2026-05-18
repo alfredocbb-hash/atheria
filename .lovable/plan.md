@@ -1,32 +1,112 @@
-# Fix: no se puede iniciar sesión (form se envía como GET con credenciales en URL)
 
-## Diagnóstico
-1. La barra muestra `/login?email=...&password=Visa4517`. Eso es un submit **nativo GET** del `<form>` con los `name` de cada input (`email`, `password` que pone `register()`).
-2. El JWT de las llamadas posteriores a `user_roles` confirma que Supabase Auth funciona — el bug está en el submit del formulario, no en las credenciales.
-3. Causa raíz: el HTML SSR del login se pinta antes de que TanStack Start hidrate. Si el usuario clickea "Ingresar" o pulsa Enter durante esa ventana, no hay handler React adjunto y el navegador hace submit nativo. El `<form>` no tiene `action` ni `method`, así que recarga `/login` por GET con los campos en la query.
-4. Riesgo secundario: las credenciales quedan en el historial del navegador, en logs del proxy y en el query string (problema de seguridad serio).
-5. Riesgo terciario: `/login` no tiene `beforeLoad` que redirija al usuario ya autenticado, por lo que el page se monta y solo el `useEffect` corrige la ruta — eso permitió que el usuario, ya logueado, vuelva a "loguearse" y dispare el bug.
+## Objetivo
 
-## Cambios
+Hoy las acciones como "Nuevo suministro", "Nueva tarifa", "Cargar lectura", "Generar factura", "Nuevo socio", "Nueva cuadrilla", "Ver factura", "Abrir reclamo" abren un panel lateral (Sheet) o modal (Dialog) sobre el módulo. Esto rompe el paradigma multi-pestaña: el usuario no puede dejar el formulario abierto mientras navega a otro módulo.
 
-### 1. Endurecer el `<form>` de login (`src/routes/login.tsx`)
-- `noValidate` (ya validamos con zod).
-- `method="post"` y `action="?"` para que un submit pre-hidratación no agregue parámetros a la URL ni cambie de método. Como no tenemos endpoint server para `/login`, el browser igual recargará, pero **sin** mandar email/password en `?query`.
-- Wrapper `onSubmit` que llama `e.preventDefault()` **antes** de delegar a `form.handleSubmit(onSubmit)`. Esto es redundante con react-hook-form pero blinda contra cualquier handler que no llegue a correr.
-- Renombrar el input de password con `autoComplete="current-password"` ya está; agregar `name="email"`/`name="password"` ya viene de `register`, ok.
+Propuesta: cada una de esas acciones abre una **pestaña hija** en la barra del workspace, al mismo nivel que los módulos del menú, con su propio estado preservado (igual que las pestañas principales). El usuario puede tener "Suministros" + "Nuevo suministro" + "Factura F-0001" abiertos en paralelo y alternar entre ellos.
 
-### 2. Gate en `beforeLoad` de `/login` (`src/routes/login.tsx`)
-Antes de que el componente monte, si hay sesión Supabase, hacer `throw redirect({ to: "/admin" | "/cliente" })`. Para saber a dónde redirigir necesitamos los roles → consultamos `supabase.auth.getSession()` y, si hay user, `user_roles` rápido. Si la consulta de roles falla, redirigimos a `/cliente` (fallback seguro). Esto elimina la ventana en que el usuario "logueado" ve el form de nuevo.
+## Cambios en el workspace
 
-### 3. Mostrar loader hasta hidratación (defensivo)
-Renderizar el `<form>` solo cuando `auth.isLoading === false`. Mientras carga, mostrar un spinner. Esto evita que el HTML SSR del form sea interactivo antes de tiempo. Costo: una fracción de segundo más sin formulario; beneficio: imposible enviar el form sin handlers React.
+### 1. Soportar pestañas dinámicas (no sólo módulos del menú)
 
-## No incluye
-- Reescribir login como server function (mayor cambio, no necesario para este fix).
-- Tocar el flujo de Google OAuth — funciona.
-- Cambios en `__root.tsx` / `AuthGate` — están correctos.
+`module-registry.ts` hoy mapea claves estáticas (`socios`, `suministros`, ...). Hay que extenderlo para soportar pestañas dinámicas que no vienen del registry:
+
+- Nuevo tipo `WorkspaceTab` con: `id` (único, p.ej. `suministro:new`, `factura:detail:<uuid>`), `title`, `icon`, `kind: "module" | "dynamic"`, `parentKey?` (módulo padre, para agrupar visualmente), `closable: true`, `payload?` (props para el componente, p.ej. `{ invoiceId }`).
+- `WorkspaceContext` pasa de `openTabs: ModuleKey[]` a `openTabs: WorkspaceTab[]`. Persistencia en `sessionStorage` se mantiene (los payloads serializables se guardan; las pestañas dinámicas se restauran al refrescar).
+- Nuevo método `openDynamicTab(tab: WorkspaceTab)` y `updateTab(id, patch)` (para renombrar p.ej. "Nuevo suministro" → "Suministro 12345" tras crear).
+- Las pestañas dinámicas se cierran automáticamente tras submit exitoso (opcional, configurable).
+
+### 2. Registry de vistas dinámicas
+
+Nuevo archivo `dynamic-views.ts` que mapea `viewKey` → componente. Ejemplos:
+
+```
+suministro.new       → <SuministroNewView />
+suministro.meters    → <MetersView supplyId={...} />
+socio.new            → <SocioNewView />
+tarifa.new           → <TarifaNewView />
+lectura.new          → <LecturaNewView />
+factura.new          → <FacturaNewView />
+factura.detail       → <FacturaDetailView invoiceId={...} />
+reclamo.detail       → <ReclamoDetailView claimId={...} />
+cuadrilla.edit       → <CuadrillaEditView crewId={...} /> (id opcional = nueva)
+```
+
+Cada vista recibe `payload` + un `onDone()` callback que cierra la pestaña.
+
+### 3. Render
+
+`workspace-panels.tsx` itera sobre `openTabs` y, según `kind`, renderiza componente del module registry o del dynamic-views registry pasando `payload`. Sigue usando `hidden` para preservar estado.
+
+`workspace-tabs-bar.tsx` muestra todas las pestañas en orden. Las dinámicas se ven con un ícono distintivo (p.ej. `Plus` para "nuevo", `FileText` para detalle). El click derecho mantiene cerrar/otras/derecha.
+
+## Cambios por módulo
+
+Para cada uno: extraer el contenido del Sheet/Dialog a un componente independiente con layout de página (header + form), reemplazar el `<SheetTrigger>` por un botón que llama `openDynamicTab(...)`, y eliminar el Sheet/Dialog del módulo.
+
+### Suministros (`admin.suministros.tsx`)
+- `Nuevo suministro` (Sheet) → pestaña `suministro.new`. Tras crear, renombra a "Suministro <numero>" o cierra.
+- `Gestionar medidores` (Sheet, abierta desde menú contextual) → pestaña `suministro.meters` con `payload: { supplyId }`. Título: "Medidores · <supply_number>".
+
+### Socios (`admin.socios.tsx`)
+- `Nuevo socio` (Sheet) → pestaña `socio.new`.
+
+### Facturación (`admin.facturacion.tsx`)
+- `Nueva tarifa` (Sheet) → pestaña `tarifa.new`.
+- `Cargar lectura` (Sheet) → pestaña `lectura.new`.
+- `Generar factura` (Dialog) → pestaña `factura.new`.
+- `Ver factura` (botón en tabla, hoy abre `InvoiceDetailDialog`) → pestaña `factura.detail` con `payload: { invoiceId }`. Título: "Factura <numero>".
+
+### Reclamos (`admin.reclamos.tsx`)
+- `Abrir` reclamo (botón en tabla, hoy `ClaimDetailSheet`) → pestaña `reclamo.detail` con `payload: { claimId }`. Título: "Reclamo <numero>".
+- `Nueva` cuadrilla y editar cuadrilla (Sheet) → pestaña `cuadrilla.edit` con `payload: { crewId? }`.
+
+### Sin cambios
+- Dashboard, Usuarios y Roles, Auditoría: no tienen formularios modales por ahora.
+- Dropdowns de cambio de estado / asignación rápida quedan como están (son acciones inline, no formularios).
+
+## Persistencia y refresh
+
+- Las pestañas dinámicas con `payload` serializable (sólo IDs/strings) se guardan en `sessionStorage` y se restauran al refrescar.
+- El estado del formulario dentro de la vista se preserva mientras la pestaña esté abierta (igual que los módulos), porque el componente queda montado con `hidden`.
+
+## Detalles técnicos
+
+```text
+src/components/workspace/
+  module-registry.ts          (sin cambios estructurales)
+  dynamic-views.ts            NEW — registry de vistas dinámicas
+  workspace-context.tsx       refactor: openTabs: WorkspaceTab[]
+  workspace-panels.tsx        renderiza módulos + dinámicas
+  workspace-tabs-bar.tsx      muestra ambos tipos
+
+src/components/workspace/views/
+  suministro-new-view.tsx     NEW
+  suministro-meters-view.tsx  NEW
+  socio-new-view.tsx          NEW
+  tarifa-new-view.tsx         NEW
+  lectura-new-view.tsx        NEW
+  factura-new-view.tsx        NEW
+  factura-detail-view.tsx     NEW
+  reclamo-detail-view.tsx     NEW
+  cuadrilla-edit-view.tsx     NEW
+
+src/routes/_authenticated/admin.*.tsx
+  - quitar Sheet/Dialog
+  - botones llaman ws.openDynamicTab({...})
+```
+
+Los hooks (`useCreateSupply`, etc.) se mueven tal cual a las nuevas vistas. La lógica de form no cambia, sólo el contenedor.
+
+## Riesgos
+
+- El `ClaimDetailSheet` y `MetersSheet` son complejos; mover a vista requiere también ajustar `SheetFooter` → footer normal. Sin pérdida funcional.
+- Pestañas dinámicas pueden acumularse; el menú contextual (Cerrar todas / a la derecha) ya cubre la limpieza.
 
 ## Validación
-1. Recargar `/login`, escribir credenciales y dar Enter inmediatamente: debe autenticar y redirigir a `/admin` sin pasar por `/login?email=...`.
-2. Estando logueado, ir manualmente a `/login`: el `beforeLoad` debe redirigir antes de pintar.
-3. Credenciales inválidas: toast de error, URL queda en `/login` limpia (sin query).
+
+- Abrir "Nuevo suministro" desde Suministros → aparece pestaña nueva en la barra, el módulo Suministros queda intacto.
+- Cambiar a Socios y volver: el formulario sigue con los datos cargados.
+- Crear el suministro: la pestaña se cierra y la lista de Suministros se refresca.
+- Abrir "Ver" en una factura: pestaña "Factura F-XXX". Abrir otra: dos pestañas distintas, navegables.
+- Refresh del navegador: las pestañas (incluidas las dinámicas con payload) se restauran.
