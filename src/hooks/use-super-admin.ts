@@ -14,6 +14,38 @@ import {
   upsertPlan,
 } from "@/lib/super-admin.functions";
 
+type UpdateTenantInput = {
+  id: string;
+  name?: string;
+  slug?: string;
+  plan_id?: string | null;
+  status?: "trial" | "active" | "past_due" | "suspended" | "cancelled";
+  trial_ends_at?: string | null;
+  billing_provider?: "mercadopago" | "stripe" | "manual";
+};
+
+type CreateTenantInput = {
+  name: string;
+  slug: string;
+  plan_id?: string | null;
+  trial_days?: number;
+  admin_email?: string;
+};
+
+type UpsertPlanInput = {
+  id?: string;
+  code: string;
+  name: string;
+  description?: string | null;
+  price_cents: number;
+  currency?: string;
+  is_active?: boolean;
+  features?: Record<string, unknown>;
+  limits?: Record<string, unknown>;
+  provider_price_id?: string | null;
+  mp_preapproval_plan_id?: string | null;
+};
+
 export function useIsSuperAdmin() {
   const fn = useServerFn(amISuperAdmin);
   return useQuery({
@@ -42,7 +74,7 @@ export function useUpdateTenant() {
   const fn = useServerFn(updateTenant);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    mutationFn: (data: UpdateTenantInput) => fn({ data }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["super", "tenants"] });
       toast.success("Tenant actualizado");
@@ -55,7 +87,7 @@ export function useCreateTenant() {
   const fn = useServerFn(createTenant);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    mutationFn: (data: CreateTenantInput) => fn({ data }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["super", "tenants"] });
       toast.success("Tenant creado");
@@ -73,7 +105,7 @@ export function useUpsertPlan() {
   const fn = useServerFn(upsertPlan);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    mutationFn: (data: UpsertPlanInput) => fn({ data }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["super", "plans"] });
       toast.success("Plan guardado");
