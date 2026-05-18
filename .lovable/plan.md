@@ -1,75 +1,51 @@
-## Diagnóstico
+# Bug: al abrir "Nuevo suministro" la pestaña vuelve a Suministros
 
-Síntoma reportado: en `/admin/socios` el botón "Nuevo socio" abre la pestaña pero el formulario no aparece (solo se ve el título). El warning de consola "concurrent rendering recovered by sync render" sugiere que algún hijo lanza durante render y, al no haber `ErrorBoundary` en los paneles del workspace, el sub-árbol queda vacío en silencio.
+## Causa
 
-Sin instrumentación no podemos ver el mensaje exacto. El plan es:
+En `src/components/workspace/workspace-context.tsx`:
 
-1. **Instrumentar** todos los paneles con un `ErrorBoundary` para que cualquier error se vea en pantalla.
-2. **Aplicar fix preventivo** al patrón sospechoso (campos `email` opcionales con `.email().optional().or(z.literal(""))` + react-hook-form v7 + `@hookform/resolvers` v5).
-3. **Revisar todos los botones "Nuevo …"** del menú (no solo socios), aplicando el mismo refuerzo a los views que comparten el patrón.
+```ts
+export function useEnsureTab(key: ModuleKey) {
+  const ws = useContext(WorkspaceCtx);
+  useEffect(() => {
+    if (!ws) return;
+    ws.openModule(key, { focus: true });
+  }, [ws, key]);   // <-- ws cambia en cada render del provider
+}
+```
 
-## Inventario de botones a verificar
+El valor `ws` del contexto se recalcula (vía `useMemo`) cada vez que cambian `openTabs` o `activeId`. Entonces:
 
-Todos abren pestañas vía `ws.openView`:
+1. Usuario hace clic en "Nuevo suministro" → `openView(...)` cambia `activeId` a `view:suministro.new`.
+2. El provider re-renderiza, `ws` obtiene una referencia nueva.
+3. `SuministrosPageTrigger` sigue montado (la URL aún es `/admin/suministros`), su `useEnsureTab("suministros")` re-ejecuta el efecto porque `ws` cambió.
+4. Eso llama `openModule("suministros", { focus: true })` → `setActiveId(moduleId("suministros"))` → el foco vuelve a la pestaña "Suministros".
 
-- Socios → `socio.new`
-- Suministros → `suministro.new`, `suministro.meters` (gestionar medidores)
-- Facturación → `tarifa.new`, `lectura.new`, `factura.new`, `factura.detail`
-- Reclamos → `reclamo.detail`, `cuadrilla.edit` (nueva y edición)
+El mismo bug afecta a **todos** los botones "Nuevo …" de los módulos (Socios, Facturación, Reclamos, etc.). Por eso ninguna vista nueva queda visible.
 
-## Cambios
+## Fix
 
-### 1) ErrorBoundary en paneles del workspace
+Hacer que `useEnsureTab` corra el efecto **una sola vez por `key`**, sin depender de la referencia inestable de `ws`. Usar un `ref` para acceder al contexto vigente:
 
-Nuevo `src/components/workspace/view-error-boundary.tsx`:
-- Clase con `getDerivedStateFromError` que muestra título, `error.message`, stack en `<pre>`, botón "Reintentar" (reset state) y "Cerrar pestaña" (llama `closeTab(tabId)` vía prop).
+```ts
+export function useEnsureTab(key: ModuleKey) {
+  const ws = useContext(WorkspaceCtx);
+  const wsRef = useRef(ws);
+  wsRef.current = ws;
+  useEffect(() => {
+    wsRef.current?.openModule(key, { focus: true });
+  }, [key]);
+}
+```
 
-Modificar `src/components/workspace/workspace-panels.tsx`:
-- Envolver cada panel (módulo y view) en `<ViewErrorBoundary tabId={tab.id} title={...}>...</ViewErrorBoundary>`.
+Así el módulo se asegura/foca al montar la ruta, pero los cambios posteriores de `activeId` (al abrir un view tab) ya no re-disparan el foco.
 
-### 2) Refuerzo de schemas en los views de formulario
+## Archivos a modificar
 
-Patrón a aplicar en todos los views con `useForm + zodResolver`:
-- Reemplazar `z.string().email("…").optional().or(z.literal(""))` por:
-  ```ts
-  z.union([z.literal(""), z.string().email("Email inválido")]).optional()
-  ```
-- Asegurar `defaultValues` con `""` para todos los `optional()` (evita `undefined` que rompe controles controlados).
-- Para `Select` controlados, garantizar que `value={field.value ?? ""}` no quede `undefined`.
+- `src/components/workspace/workspace-context.tsx` — actualizar `useEnsureTab` (≈6 líneas).
 
-Archivos a revisar/ajustar:
-- `src/components/workspace/views/socio-new-view.tsx` (email)
-- `src/components/workspace/views/suministro-new-view.tsx` (defaults de address.*)
-- `src/components/workspace/views/factura-new-view.tsx`
-- `src/components/workspace/views/factura-detail-view.tsx`
-- `src/components/workspace/views/lectura-new-view.tsx`
-- `src/components/workspace/views/tarifa-new-view.tsx`
-- `src/components/workspace/views/reclamo-detail-view.tsx`
-- `src/components/workspace/views/cuadrilla-edit-view.tsx`
-- `src/components/workspace/views/suministro-meters-view.tsx`
+## Verificación
 
-Para cada uno: leer el archivo, normalizar defaults y schemas según el patrón. Sin tocar lógica de mutaciones ni server functions.
-
-### 3) Verificación manual (post-implementación)
-
-Recorrer cada módulo y disparar cada botón "Nuevo …" / acción que abre pestaña:
-- Socios → Nuevo socio
-- Suministros → Nuevo suministro, Gestionar medidores
-- Facturación → Nueva tarifa, Nueva lectura, Generar factura, Ver factura
-- Reclamos → Ver reclamo, Nueva cuadrilla, Editar cuadrilla
-
-Para cada uno confirmar:
-- aparece la pestaña en la barra
-- el panel muestra el formulario/detalle completo (no queda en blanco)
-- "Cancelar" o equivalente cierra la pestaña
-- "Crear/Guardar" funciona y cierra/refresca
-
-Si algún panel cae en `ViewErrorBoundary`, leer el mensaje y aplicar el fix puntual.
-
-## Archivos tocados
-
-- `src/components/workspace/view-error-boundary.tsx` (nuevo)
-- `src/components/workspace/workspace-panels.tsx` (envolver paneles)
-- Los 9 archivos en `src/components/workspace/views/` (normalizar schemas/defaults)
-
-Sin cambios en lógica de negocio, server functions ni base de datos.
+- En `/admin/suministros`, clic en "Nuevo suministro" → la pestaña queda activa y muestra el formulario.
+- Repetir con "Nuevo socio", "Nueva tarifa", "Nueva lectura", "Generar factura", "Nueva cuadrilla" → cada una abre y mantiene su panel.
+- Navegar por la sidebar entre módulos sigue funcionando (cambia la URL y enfoca el módulo correcto).
