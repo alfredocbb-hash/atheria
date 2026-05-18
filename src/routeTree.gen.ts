@@ -16,6 +16,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as FuncionalidadesRouteImport } from './routes/funcionalidades'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as CasosRouteImport } from './routes/casos'
+import { Route as AccederRouteImport } from './routes/acceder'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSuperRouteImport } from './routes/_authenticated/super'
@@ -72,6 +73,11 @@ const ContactoRoute = ContactoRouteImport.update({
 const CasosRoute = CasosRouteImport.update({
   id: '/casos',
   path: '/casos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccederRoute = AccederRouteImport.update({
+  id: '/acceder',
+  path: '/acceder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -200,6 +206,7 @@ const ApiPublicBillingWebhookProviderRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/acceder': typeof AccederRoute
   '/casos': typeof CasosRoute
   '/contacto': typeof ContactoRoute
   '/funcionalidades': typeof FuncionalidadesRoute
@@ -230,6 +237,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/acceder': typeof AccederRoute
   '/casos': typeof CasosRoute
   '/contacto': typeof ContactoRoute
   '/funcionalidades': typeof FuncionalidadesRoute
@@ -260,6 +268,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/acceder': typeof AccederRoute
   '/casos': typeof CasosRoute
   '/contacto': typeof ContactoRoute
   '/funcionalidades': typeof FuncionalidadesRoute
@@ -292,6 +301,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/acceder'
     | '/casos'
     | '/contacto'
     | '/funcionalidades'
@@ -322,6 +332,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/acceder'
     | '/casos'
     | '/contacto'
     | '/funcionalidades'
@@ -351,6 +362,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/acceder'
     | '/casos'
     | '/contacto'
     | '/funcionalidades'
@@ -383,6 +395,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AccederRoute: typeof AccederRoute
   CasosRoute: typeof CasosRoute
   ContactoRoute: typeof ContactoRoute
   FuncionalidadesRoute: typeof FuncionalidadesRoute
@@ -442,6 +455,13 @@ declare module '@tanstack/react-router' {
       path: '/casos'
       fullPath: '/casos'
       preLoaderRoute: typeof CasosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acceder': {
+      id: '/acceder'
+      path: '/acceder'
+      fullPath: '/acceder'
+      preLoaderRoute: typeof AccederRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -671,6 +691,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AccederRoute: AccederRoute,
   CasosRoute: CasosRoute,
   ContactoRoute: ContactoRoute,
   FuncionalidadesRoute: FuncionalidadesRoute,
