@@ -1,49 +1,41 @@
-## Habilitar edición y borrado para Admin en todo el sistema
+# Editar socios desde el admin
 
-Las RLS ya autorizan al rol `admin` a hacer `UPDATE/DELETE` en todas las tablas. Falta el plumbing: server fns + hooks + UI. Borrado **mixto**: facturas y pagos se **anulan** (conservan historial), el resto se **elimina** con confirmación.
+Actualmente en `/admin/socios` el admin solo ve el botón de eliminar. Falta el de **editar**. El backend (`useUpdateMember` + server fn `updateMember`) ya existe, así que solo es trabajo de UI: extender el formulario existente para soportar modo edición y abrirlo desde el listado.
 
-### 1. Nuevas server fns (todas con `requireSupabaseAuth` + chequeo `admin`)
+## Cambios
 
-| Entidad | Server fn nueva | Acción |
-|---|---|---|
-| `members` | `deleteMember` | DELETE (bloquea si tiene suministros/facturas/reclamos; sugiere marcar `status='inactive'`) |
-| `supplies` | `updateSupply`, `deleteSupply` | UPDATE de todos los campos editables; DELETE (bloquea si hay facturas/medidores activos) |
-| `meters` | `updateMeter`, `deleteMeter` | UPDATE; DELETE (bloquea si tiene lecturas) |
-| `meter_readings` | `updateReading`, `deleteReading` | DELETE recalcula consumo |
-| `tariffs` | `updateTariff`, `deleteTariff` | UPDATE; DELETE solo si no fue usada (no hay invoice con esa tarifa vigente) |
-| `crews` | `deleteCrew` | DELETE (bloquea si tiene OT activas) |
-| `claims` | `updateClaim`, `deleteClaim` | UPDATE de título/descr./categoría/prioridad/ubicación; DELETE (borra OT y comentarios en cascada) |
-| `work_orders` | `updateWorkOrder`, `deleteWorkOrder` | UPDATE de cuadrilla/fecha/notas; DELETE |
-| `claim_comments` | `deleteClaimComment` | DELETE |
-| `invoices` | `updateInvoice` | UPDATE acotado: `due_date`, `notes`, `period_*` (NO `total/balance`). El borrado sigue siendo `voidInvoice` (ya existe). |
-| `payments` | `updatePayment`, `voidPayment` | UPDATE de fecha/monto/método/notas; `voidPayment` borra el pago y recalcula balance de la factura (el trigger `payments_after_change` ya lo hace en DELETE). |
+### 1. `src/components/workspace/views/socio-new-view.tsx`
+Convertir el componente en dual-modo (crear / editar):
+- Aceptar `payload?: { member?: Member }` desde el workspace.
+- Si viene `member`, precargar `defaultValues` y usar `useUpdateMember` en lugar de `useCreateMember`.
+- Ajustar título ("Nuevo socio" vs "Editar socio · {nombre}") y label del botón ("Crear socio" vs "Guardar cambios").
+- En edición, el campo `N° socio` queda deshabilitado (es identificador estable).
 
-Cada `delete*` valida dependencias con un `count` previo y devuelve mensaje claro ("No se puede eliminar: tiene N facturas").
+### 2. `src/components/workspace/dynamic-views.ts`
+Sin cambios estructurales — el mismo `socio.new` viewKey sirve para ambos modos. (Alternativa más limpia: registrar también `socio.edit` apuntando al mismo componente para que el título por defecto y el iconKey sean correctos.)
 
-### 2. Hooks (`src/hooks/`)
-Para cada server fn nueva, agregar `useMutation` con invalidación de las queries afectadas (`padron`, `billing`, `claims`, `dashboard`).
+### 3. `src/routes/_authenticated/admin.socios.tsx`
+En la columna **Acciones**, junto al `DeleteButton`, agregar un botón **Editar** (ícono lápiz) que abre el view con el socio cargado:
 
-### 3. UI — menú de acciones en cada listado admin
-Agregar columna "Acciones" con `DropdownMenu` (Editar / Eliminar o Anular) en:
+```tsx
+ws.openView({
+  id: `view:socio.edit:${m.id}`,
+  viewKey: "socio.edit",
+  title: `Editar · ${m.full_name}`,
+  iconKey: "pencil",
+  parentModule: "socios",
+  payload: { member: m },
+})
+```
 
-- `admin.socios.tsx` — editar (reusa `socio-new-view` en modo edición) / eliminar
-- `admin.suministros.tsx` — editar / eliminar
-- `admin.tarifas.tsx` — editar / activar-desactivar (ya existe) / eliminar
-- `admin.facturacion.tsx` — editar (vencimiento/notas) / anular / eliminar pago
-- `admin.reclamos.tsx` — editar / eliminar; dentro del detalle, editar/eliminar OT y comentarios
-- `admin.usuarios.tsx` — ya tiene asignar/revocar rol (sin cambios)
-- Vista de medidores/lecturas (dentro de `suministro-meters-view`) — editar/eliminar
+## Detalles técnicos
 
-Patrón único:
-- **Editar**: abre el form existente prellenado (extender los views `*-new-view.tsx` para aceptar prop `initial`/`mode`).
-- **Eliminar/Anular**: `AlertDialog` con texto claro ("Esta acción no se puede deshacer" / "Se anulará la factura F-…") y motivo opcional para anulaciones.
+- `useUpdateMember` ya acepta `{ id, patch }` y invalida `["padron", "members"]`, por lo que el listado se refresca solo tras guardar.
+- El schema Zod actual sirve tal cual para ambos modos.
+- En edición se envía como `patch` solo los campos editables (`full_name`, `document_id`, `email`, `phone`, `status`, `notes`); `member_number` se omite.
+- Visibilidad: el botón Editar se muestra para admin **y** operador (igual que el resto del CRUD de socios — RLS `Staff full access on members` ya lo permite). Si preferís limitarlo a admin solo, lo envolvemos en un check `auth.hasRole("admin")` como hace `DeleteButton`.
 
-### 4. Seguridad y auditoría
-- Todas las server fns chequean `has_role(uid, 'admin')` server-side (no confiar en UI).
-- Operaciones destructivas registran un evento en `audit_log` (`*.deleted`, `*.updated`) vía la función `log_audit` existente.
-- No se modifican RLS ni triggers; los triggers de auditoría/notificación ya cubren `UPDATE/DELETE` en facturas/pagos/reclamos/OT.
+## Fuera de alcance
 
-### Fuera de alcance
-- No se cambia el modelo de datos.
-- No se agrega "papelera/undelete".
-- El rol `operator` mantiene sus permisos actuales (no se le habilita borrado).
+- Cambiar la política de roles.
+- Re-asignar la vinculación con `user_id` desde este formulario (sigue siendo automática por email).
