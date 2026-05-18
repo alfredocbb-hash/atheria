@@ -37,6 +37,7 @@ function SuperLayoutRoute() {
     { label: "Planes", to: "/super/planes", icon: LayoutGrid },
     { label: "Eventos", to: "/super/eventos", icon: ListTree },
     { label: "Health", to: "/super/health", icon: Activity },
+    { label: "Facturación", to: "/super/facturacion", icon: CreditCard },
   ] as const;
 
   return (
