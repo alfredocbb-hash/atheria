@@ -13,6 +13,11 @@ async function ensureStaff(supabase: any, userId: string) {
   if (!(await isStaff(supabase, userId))) throw new Error("Forbidden: solo personal autorizado");
 }
 
+async function ensureAdmin(supabase: any, userId: string) {
+  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+  if (!isAdmin) throw new Error("Forbidden: requiere rol de administrador");
+}
+
 const Category = z.enum(["water_outage", "gas_outage", "electricity_outage", "leak", "meter", "billing", "other"]);
 const Priority = z.enum(["low", "medium", "high", "urgent"]);
 const Status = z.enum(["open", "assigned", "in_progress", "resolved", "cancelled"]);
@@ -154,6 +159,55 @@ export const updateClaimStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const ClaimPatch = z.object({
+  title: z.string().trim().min(3).max(160).optional(),
+  description: z.string().trim().max(4000).optional().or(z.literal("")),
+  category: Category.optional(),
+  priority: Priority.optional(),
+  location: z.string().trim().max(240).optional().or(z.literal("")),
+  supply_id: z.string().uuid().nullable().optional(),
+});
+
+export const updateClaim = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ id: z.string().uuid(), patch: ClaimPatch }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureStaff(supabase, userId);
+    const patch: any = { ...data.patch };
+    if (patch.description === "") patch.description = null;
+    if (patch.location === "") patch.location = null;
+    const { error } = await supabase.from("claims").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteClaim = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    await supabase.from("work_orders").delete().eq("claim_id", data.id);
+    await supabase.from("claim_comments").delete().eq("claim_id", data.id);
+    const { error } = await supabase.from("claims").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteClaimComment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    const { error } = await supabase.from("claim_comments").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const addClaimComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) =>
@@ -217,6 +271,21 @@ export const upsertCrew = createServerFn({ method: "POST" })
     const { data: row, error } = await supabase.from("crews").insert(payload).select().single();
     if (error) throw new Error(error.message);
     return row;
+  });
+
+export const deleteCrew = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    const { count } = await supabase
+      .from("work_orders").select("id", { count: "exact", head: true })
+      .eq("crew_id", data.id).in("status", ["scheduled", "in_progress"]);
+    if ((count ?? 0) > 0) throw new Error(`No se puede eliminar: tiene ${count} orden(es) activa(s).`);
+    const { error } = await supabase.from("crews").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 // ---------- Work Orders ----------
@@ -283,6 +352,40 @@ export const updateWorkOrderStatus = createServerFn({ method: "POST" })
         .update({ status: "resolved", resolved_at: now })
         .eq("id", wo.claim_id);
     }
+    return { ok: true };
+  });
+
+const WOPatch = z.object({
+  crew_id: z.string().uuid().optional(),
+  scheduled_at: z.string().optional().or(z.literal("")),
+  notes: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+
+export const updateWorkOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ id: z.string().uuid(), patch: WOPatch }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureStaff(supabase, userId);
+    const patch: any = { ...data.patch };
+    if (patch.scheduled_at === "") patch.scheduled_at = null;
+    else if (patch.scheduled_at) patch.scheduled_at = new Date(patch.scheduled_at).toISOString();
+    if (patch.notes === "") patch.notes = null;
+    const { error } = await supabase.from("work_orders").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteWorkOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    const { error } = await supabase.from("work_orders").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 
