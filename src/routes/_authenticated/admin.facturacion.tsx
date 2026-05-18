@@ -3,7 +3,7 @@ import { useEnsureTab, useWorkspace } from "@/components/workspace/workspace-con
 import { useEffect, useState } from "react";
 import { Loader2, Plus, FileText, Gauge } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,21 +24,14 @@ export function FacturacionPage() {
   const navigate = useNavigate();
   useEffect(() => { if (!auth.isLoading && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth, navigate]);
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Operaciones</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Facturación</h1>
-        <p className="text-sm text-muted-foreground">Tarifas, lecturas, facturas y pagos.</p>
-      </div>
-      <Tabs defaultValue="invoices" className="space-y-4">
+    <Tabs defaultValue="invoices" className="space-y-4">
         <TabsList>
           <TabsTrigger value="invoices"><FileText className="mr-2 h-4 w-4" />Facturas</TabsTrigger>
           <TabsTrigger value="readings"><Gauge className="mr-2 h-4 w-4" />Lecturas</TabsTrigger>
         </TabsList>
         <TabsContent value="invoices"><InvoicesTab /></TabsContent>
         <TabsContent value="readings"><ReadingsTab /></TabsContent>
-      </Tabs>
-    </div>
+    </Tabs>
   );
 }
 
@@ -48,13 +41,12 @@ function ReadingsTab() {
   const del = useDeleteReading();
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Lecturas de medidores</CardTitle>
-        <Button size="sm" onClick={() => ws.openView({ id: "view:lectura.new", viewKey: "lectura.new", title: "Nueva lectura", iconKey: "gauge", parentModule: "facturacion" })}>
+      <div className="flex flex-wrap items-center gap-2 border-b p-3">
+        <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:lectura.new", viewKey: "lectura.new", title: "Nueva lectura", iconKey: "gauge", parentModule: "facturacion" })}>
           <Plus className="mr-1 h-4 w-4" />Cargar lectura
         </Button>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <CardContent className="pt-4">
         {isLoading ? <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /> : (
           <Table>
             <TableHeader><TableRow>
@@ -96,9 +88,7 @@ function InvoicesTab() {
   const voidInv = useVoidInvoice();
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <CardTitle className="text-base">Facturas</CardTitle>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 border-b p-3">
           <Select value={status} onValueChange={(v) => setStatus(v === "all" ? "" : v)}>
             <SelectTrigger className="w-40"><SelectValue placeholder="Estado" /></SelectTrigger>
             <SelectContent>
@@ -109,12 +99,11 @@ function InvoicesTab() {
               <SelectItem value="void">Anuladas</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" onClick={() => ws.openView({ id: "view:factura.new", viewKey: "factura.new", title: "Generar factura", iconKey: "receipt", parentModule: "facturacion" })}>
+          <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:factura.new", viewKey: "factura.new", title: "Generar factura", iconKey: "receipt", parentModule: "facturacion" })}>
             <Plus className="mr-1 h-4 w-4" />Generar factura
           </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <CardContent className="pt-4">
         {isLoading ? <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /> : (
           <Table>
             <TableHeader><TableRow>
