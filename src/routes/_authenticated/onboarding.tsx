@@ -82,7 +82,11 @@ function Wizard() {
     create.mutate(
       { name: name.trim(), slug: computedSlug, planId, locality: locality.trim() || undefined },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
+          if (res && (res as any).ok === false) {
+            toast.error("No se pudo crear", { description: (res as any).error });
+            return;
+          }
           toast.success("Cooperativa creada");
           navigate({ to: "/admin", replace: true });
         },
