@@ -23,6 +23,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedSuperTenantsRouteImport } from './routes/_authenticated/super.tenants'
 import { Route as AuthenticatedSuperPlanesRouteImport } from './routes/_authenticated/super.planes'
 import { Route as AuthenticatedSuperHealthRouteImport } from './routes/_authenticated/super.health'
+import { Route as AuthenticatedSuperFacturacionRouteImport } from './routes/_authenticated/super.facturacion'
 import { Route as AuthenticatedSuperEventosRouteImport } from './routes/_authenticated/super.eventos'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminTarifasRouteImport } from './routes/_authenticated/admin.tarifas'
@@ -106,6 +107,12 @@ const AuthenticatedSuperHealthRoute =
     path: '/health',
     getParentRoute: () => AuthenticatedSuperRoute,
   } as any)
+const AuthenticatedSuperFacturacionRoute =
+  AuthenticatedSuperFacturacionRouteImport.update({
+    id: '/facturacion',
+    path: '/facturacion',
+    getParentRoute: () => AuthenticatedSuperRoute,
+  } as any)
 const AuthenticatedSuperEventosRoute =
   AuthenticatedSuperEventosRouteImport.update({
     id: '/eventos',
@@ -185,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/super/facturacion': typeof AuthenticatedSuperFacturacionRoute
   '/super/health': typeof AuthenticatedSuperHealthRoute
   '/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/super/tenants': typeof AuthenticatedSuperTenantsRoute
@@ -208,6 +216,7 @@ export interface FileRoutesByTo {
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/super/facturacion': typeof AuthenticatedSuperFacturacionRoute
   '/super/health': typeof AuthenticatedSuperHealthRoute
   '/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/super/tenants': typeof AuthenticatedSuperTenantsRoute
@@ -235,6 +244,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/_authenticated/super/facturacion': typeof AuthenticatedSuperFacturacionRoute
   '/_authenticated/super/health': typeof AuthenticatedSuperHealthRoute
   '/_authenticated/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/_authenticated/super/tenants': typeof AuthenticatedSuperTenantsRoute
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
     | '/admin/tarifas'
     | '/admin/usuarios'
     | '/super/eventos'
+    | '/super/facturacion'
     | '/super/health'
     | '/super/planes'
     | '/super/tenants'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/admin/tarifas'
     | '/admin/usuarios'
     | '/super/eventos'
+    | '/super/facturacion'
     | '/super/health'
     | '/super/planes'
     | '/super/tenants'
@@ -311,6 +323,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/tarifas'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/super/eventos'
+    | '/_authenticated/super/facturacion'
     | '/_authenticated/super/health'
     | '/_authenticated/super/planes'
     | '/_authenticated/super/tenants'
@@ -428,6 +441,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSuperHealthRouteImport
       parentRoute: typeof AuthenticatedSuperRoute
     }
+    '/_authenticated/super/facturacion': {
+      id: '/_authenticated/super/facturacion'
+      path: '/facturacion'
+      fullPath: '/super/facturacion'
+      preLoaderRoute: typeof AuthenticatedSuperFacturacionRouteImport
+      parentRoute: typeof AuthenticatedSuperRoute
+    }
     '/_authenticated/super/eventos': {
       id: '/_authenticated/super/eventos'
       path: '/eventos'
@@ -531,6 +551,7 @@ const AuthenticatedAdminRouteWithChildren =
 
 interface AuthenticatedSuperRouteChildren {
   AuthenticatedSuperEventosRoute: typeof AuthenticatedSuperEventosRoute
+  AuthenticatedSuperFacturacionRoute: typeof AuthenticatedSuperFacturacionRoute
   AuthenticatedSuperHealthRoute: typeof AuthenticatedSuperHealthRoute
   AuthenticatedSuperPlanesRoute: typeof AuthenticatedSuperPlanesRoute
   AuthenticatedSuperTenantsRoute: typeof AuthenticatedSuperTenantsRoute
@@ -539,6 +560,7 @@ interface AuthenticatedSuperRouteChildren {
 
 const AuthenticatedSuperRouteChildren: AuthenticatedSuperRouteChildren = {
   AuthenticatedSuperEventosRoute: AuthenticatedSuperEventosRoute,
+  AuthenticatedSuperFacturacionRoute: AuthenticatedSuperFacturacionRoute,
   AuthenticatedSuperHealthRoute: AuthenticatedSuperHealthRoute,
   AuthenticatedSuperPlanesRoute: AuthenticatedSuperPlanesRoute,
   AuthenticatedSuperTenantsRoute: AuthenticatedSuperTenantsRoute,
@@ -577,3 +599,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
