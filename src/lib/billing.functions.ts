@@ -10,6 +10,11 @@ async function ensureStaff(supabase: any, userId: string) {
   if (!isAdmin && !isOp) throw new Error("Forbidden: solo personal autorizado");
 }
 
+async function ensureAdmin(supabase: any, userId: string) {
+  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+  if (!isAdmin) throw new Error("Forbidden: requiere rol de administrador");
+}
+
 // ---------- Tariffs ----------
 const TariffInput = z.object({
   name: z.string().trim().min(1).max(120),
@@ -58,6 +63,33 @@ export const toggleTariffActive = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await ensureStaff(supabase, userId);
     const { error } = await supabase.from("tariffs").update({ is_active: data.is_active }).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const updateTariff = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ id: z.string().uuid(), patch: TariffInput.partial() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureStaff(supabase, userId);
+    const patch: any = { ...data.patch };
+    if (patch.category === "") patch.category = null;
+    if (patch.valid_to === "") patch.valid_to = null;
+    const { error } = await supabase.from("tariffs").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteTariff = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    const { error } = await supabase.from("tariffs").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -121,6 +153,57 @@ export const createReading = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     return row;
+  });
+
+const ReadingPatch = z.object({
+  reading_date: z.string().min(1).optional(),
+  reading_value: z.coerce.number().min(0).optional(),
+  source: z.enum(["manual", "estimated", "remote"]).optional(),
+  notes: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+async function recomputeReadingChain(supabase: any, meterId: string) {
+  const { data: rows } = await supabase
+    .from("meter_readings")
+    .select("id, reading_date, reading_value")
+    .eq("meter_id", meterId)
+    .order("reading_date", { ascending: true });
+  let prev: number | null = null;
+  for (const r of rows ?? []) {
+    const consumption = prev == null ? 0 : Math.max(0, Number(r.reading_value) - prev);
+    await supabase.from("meter_readings").update({ consumption }).eq("id", r.id);
+    prev = Number(r.reading_value);
+  }
+}
+
+export const updateReading = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ id: z.string().uuid(), patch: ReadingPatch }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureStaff(supabase, userId);
+    const patch: any = { ...data.patch };
+    if (patch.notes === "") patch.notes = null;
+    const { data: updated, error } = await supabase
+      .from("meter_readings").update(patch).eq("id", data.id).select("meter_id").single();
+    if (error) throw new Error(error.message);
+    if (updated?.meter_id) await recomputeReadingChain(supabase, updated.meter_id);
+    return { ok: true };
+  });
+
+export const deleteReading = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureStaff(supabase, userId);
+    const { data: row } = await supabase.from("meter_readings").select("meter_id").eq("id", data.id).single();
+    const { error } = await supabase.from("meter_readings").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    if (row?.meter_id) await recomputeReadingChain(supabase, row.meter_id);
+    return { ok: true };
   });
 
 // ---------- Invoices ----------
@@ -328,6 +411,28 @@ export const voidInvoice = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const InvoicePatch = z.object({
+  due_date: z.string().min(1).optional(),
+  period_start: z.string().min(1).optional(),
+  period_end: z.string().min(1).optional(),
+  notes: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+export const updateInvoice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ id: z.string().uuid(), patch: InvoicePatch }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    const patch: any = { ...data.patch };
+    if (patch.notes === "") patch.notes = null;
+    const { error } = await supabase.from("invoices").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // ---------- Payments ----------
 const PaymentInput = z.object({
   invoice_id: z.string().uuid(),
@@ -359,6 +464,42 @@ export const registerPayment = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     return row;
+  });
+
+const PaymentPatch = z.object({
+  amount: z.coerce.number().positive().max(1e12).optional(),
+  payment_date: z.string().min(1).optional(),
+  method: z.enum(["cash", "transfer", "card", "debit", "other"]).optional(),
+  reference: z.string().trim().max(120).optional().or(z.literal("")),
+  notes: z.string().trim().max(500).optional().or(z.literal("")),
+});
+
+export const updatePayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ id: z.string().uuid(), patch: PaymentPatch }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    const patch: any = { ...data.patch };
+    if (patch.reference === "") patch.reference = null;
+    if (patch.notes === "") patch.notes = null;
+    const { error } = await supabase.from("payments").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const voidPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    // DELETE triggers payments_after_change which recomputes invoice balance/status
+    const { error } = await supabase.from("payments").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 // ---------- Client-facing ----------
