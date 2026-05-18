@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { ClientPortalLayout } from "@/components/layouts/client-portal-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, FileWarning, Wrench, Droplets, Flame, Zap, Gauge, Loader2, Plus } from "lucide-react";
+import { Wallet, FileWarning, Wrench, Droplets, Flame, Zap, Gauge, Loader2, Plus, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useMyPadron } from "@/hooks/use-padron";
 import { useMyInvoices } from "@/hooks/use-billing";
 import { useCreateClaim, useMyClaims } from "@/hooks/use-claims";
+import { InvoiceDetailDialog } from "@/components/client/invoice-detail-dialog";
 
 export const Route = createFileRoute("/_authenticated/cliente")({
   head: () => ({ meta: [{ title: "Mi cuenta — Coopecur 2.0" }] }),
@@ -26,6 +27,7 @@ function ClientPortal() {
   const { data, isLoading } = useMyPadron();
   const { data: invoices = [], isLoading: invLoading } = useMyInvoices();
   const { data: claimsData, isLoading: claimsLoading } = useMyClaims();
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
   useEffect(() => {
     if (auth.isAdminOrOperator && !auth.hasRole("client")) {
@@ -137,16 +139,26 @@ function ClientPortal() {
             ) : (
               <div className="space-y-2">
                 {invoices.map((i: any) => (
-                  <div key={i.id} className="flex items-center justify-between rounded-md border p-3 text-sm">
+                  <div key={i.id} className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
                     <div>
                       <p className="font-mono text-xs text-muted-foreground">{i.invoice_number}</p>
                       <p className="font-medium">{i.supply?.supply_number} · {i.supply?.service_type}</p>
                       <p className="text-xs text-muted-foreground">{i.period_start} → {i.period_end} · vence {i.due_date}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold">{fmt(Number(i.total), i.currency)}</p>
-                      <p className="text-xs">Saldo: <span className={Number(i.balance) > 0 ? "text-destructive" : "text-primary"}>{fmt(Number(i.balance), i.currency)}</span></p>
-                      <Badge variant={i.status === "paid" ? "default" : i.status === "overdue" ? "destructive" : "secondary"} className="mt-1">{i.status}</Badge>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="font-semibold">{fmt(Number(i.total), i.currency)}</p>
+                        <p className="text-xs">Saldo: <span className={Number(i.balance) > 0 ? "text-destructive" : "text-primary"}>{fmt(Number(i.balance), i.currency)}</span></p>
+                        <Badge variant={i.status === "paid" ? "default" : i.status === "overdue" ? "destructive" : "secondary"} className="mt-1">{i.status}</Badge>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={Number(i.balance) > 0 ? "default" : "outline"}
+                        onClick={() => setSelectedInvoiceId(i.id)}
+                      >
+                        <Eye className="mr-1 h-4 w-4" />
+                        {Number(i.balance) > 0 ? "Ver / Pagar" : "Ver"}
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -160,6 +172,12 @@ function ClientPortal() {
           supplies={supplies}
           claims={myClaims}
           loading={claimsLoading}
+        />
+
+        <InvoiceDetailDialog
+          invoiceId={selectedInvoiceId}
+          open={!!selectedInvoiceId}
+          onOpenChange={(v) => { if (!v) setSelectedInvoiceId(null); }}
         />
       </div>
     </ClientPortalLayout>
