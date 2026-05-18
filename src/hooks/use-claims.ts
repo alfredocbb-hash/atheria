@@ -5,11 +5,17 @@ import {
   addClaimComment,
   createClaim,
   createWorkOrder,
+  deleteClaim,
+  deleteClaimComment,
+  deleteCrew,
+  deleteWorkOrder,
   getClaim,
   listClaims,
   listCrews,
   listMyClaims,
+  updateClaim,
   updateClaimStatus,
+  updateWorkOrder,
   updateWorkOrderStatus,
   upsertCrew,
 } from "@/lib/claims.functions";
@@ -57,6 +63,36 @@ export function useUpdateClaimStatus() {
   });
 }
 
+export function useUpdateClaim() {
+  const fn = useServerFn(updateClaim);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; patch: any }) => fn({ data: v }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["claims"] }); toast.success("Reclamo actualizado"); },
+    onError: (e: Error) => toast.error("No se pudo actualizar", { description: e.message }),
+  });
+}
+
+export function useDeleteClaim() {
+  const fn = useServerFn(deleteClaim);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fn({ data: { id } }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["claims"] }); toast.success("Reclamo eliminado"); },
+    onError: (e: Error) => toast.error("No se pudo eliminar", { description: e.message }),
+  });
+}
+
+export function useDeleteClaimComment() {
+  const fn = useServerFn(deleteClaimComment);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; claim_id: string }) => fn({ data: { id: v.id } }),
+    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ["claims", "detail", v.claim_id] }); toast.success("Comentario eliminado"); },
+    onError: (e: Error) => toast.error("No se pudo eliminar", { description: e.message }),
+  });
+}
+
 export function useAddClaimComment() {
   const fn = useServerFn(addClaimComment);
   const qc = useQueryClient();
@@ -87,6 +123,16 @@ export function useUpsertCrew() {
   });
 }
 
+export function useDeleteCrew() {
+  const fn = useServerFn(deleteCrew);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fn({ data: { id } }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["crews"] }); toast.success("Cuadrilla eliminada"); },
+    onError: (e: Error) => toast.error("No se pudo eliminar", { description: e.message }),
+  });
+}
+
 export function useCreateWorkOrder() {
   const fn = useServerFn(createWorkOrder);
   const qc = useQueryClient();
@@ -110,6 +156,26 @@ export function useUpdateWorkOrderStatus() {
       qc.invalidateQueries({ queryKey: ["claims"] });
     },
     onError: (e: Error) => toast.error("No se pudo actualizar", { description: e.message }),
+  });
+}
+
+export function useUpdateWorkOrder() {
+  const fn = useServerFn(updateWorkOrder);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; patch: any }) => fn({ data: v }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["claims"] }); toast.success("Orden actualizada"); },
+    onError: (e: Error) => toast.error("No se pudo actualizar", { description: e.message }),
+  });
+}
+
+export function useDeleteWorkOrder() {
+  const fn = useServerFn(deleteWorkOrder);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fn({ data: { id } }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["claims"] }); toast.success("Orden eliminada"); },
+    onError: (e: Error) => toast.error("No se pudo eliminar", { description: e.message }),
   });
 }
 

@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import {
   createReading,
   createTariff,
+  deleteReading,
+  deleteTariff,
   generateInvoice,
   getInvoiceDetail,
   listInvoices,
@@ -13,6 +15,11 @@ import {
   listTariffs,
   registerPayment,
   toggleTariffActive,
+  updateInvoice,
+  updatePayment,
+  updateReading,
+  updateTariff,
+  voidPayment,
   voidInvoice,
 } from "@/lib/billing.functions";
 
@@ -37,6 +44,24 @@ export function useToggleTariff() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["billing", "tariffs"] }),
   });
 }
+export function useUpdateTariff() {
+  const fn = useServerFn(updateTariff);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; patch: any }) => fn({ data: v }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["billing", "tariffs"] }); toast.success("Tarifa actualizada"); },
+    onError: (e: Error) => toast.error("Error", { description: e.message }),
+  });
+}
+export function useDeleteTariff() {
+  const fn = useServerFn(deleteTariff);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fn({ data: { id } }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["billing", "tariffs"] }); toast.success("Tarifa eliminada"); },
+    onError: (e: Error) => toast.error("No se pudo eliminar", { description: e.message }),
+  });
+}
 
 export function useReadings(meterId?: string) {
   const fn = useServerFn(listReadings);
@@ -52,6 +77,24 @@ export function useCreateReading() {
     mutationFn: (d: any) => fn({ data: d }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["billing", "readings"] }); toast.success("Lectura registrada"); },
     onError: (e: Error) => toast.error("Error", { description: e.message }),
+  });
+}
+export function useUpdateReading() {
+  const fn = useServerFn(updateReading);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; patch: any }) => fn({ data: v }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["billing", "readings"] }); toast.success("Lectura actualizada"); },
+    onError: (e: Error) => toast.error("Error", { description: e.message }),
+  });
+}
+export function useDeleteReading() {
+  const fn = useServerFn(deleteReading);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fn({ data: { id } }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["billing", "readings"] }); toast.success("Lectura eliminada"); },
+    onError: (e: Error) => toast.error("No se pudo eliminar", { description: e.message }),
   });
 }
 
@@ -88,6 +131,15 @@ export function useVoidInvoice() {
     onError: (e: Error) => toast.error("Error", { description: e.message }),
   });
 }
+export function useUpdateInvoice() {
+  const fn = useServerFn(updateInvoice);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; patch: any }) => fn({ data: v }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["billing"] }); toast.success("Factura actualizada"); },
+    onError: (e: Error) => toast.error("No se pudo actualizar", { description: e.message }),
+  });
+}
 export function useRegisterPayment() {
   const fn = useServerFn(registerPayment);
   const qc = useQueryClient();
@@ -95,6 +147,24 @@ export function useRegisterPayment() {
     mutationFn: (d: any) => fn({ data: d }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["billing"] }); toast.success("Pago registrado"); },
     onError: (e: Error) => toast.error("Error", { description: e.message }),
+  });
+}
+export function useUpdatePayment() {
+  const fn = useServerFn(updatePayment);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; patch: any }) => fn({ data: v }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["billing"] }); toast.success("Pago actualizado"); },
+    onError: (e: Error) => toast.error("No se pudo actualizar", { description: e.message }),
+  });
+}
+export function useVoidPayment() {
+  const fn = useServerFn(voidPayment);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fn({ data: { id } }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["billing"] }); toast.success("Pago eliminado"); },
+    onError: (e: Error) => toast.error("No se pudo eliminar", { description: e.message }),
   });
 }
 

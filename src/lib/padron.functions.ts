@@ -10,6 +10,11 @@ async function ensureStaff(supabase: any, userId: string) {
   if (!isAdmin && !isOp) throw new Error("Forbidden: solo personal autorizado");
 }
 
+async function ensureAdmin(supabase: any, userId: string) {
+  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+  if (!isAdmin) throw new Error("Forbidden: requiere rol de administrador");
+}
+
 // ---------- Members ----------
 const MemberInput = z.object({
   member_number: z.string().trim().min(1).max(40),
@@ -72,6 +77,27 @@ export const updateMember = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await ensureStaff(supabase, userId);
     const { error } = await supabase.from("members").update(data.patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    const [{ count: sup }, { count: inv }, { count: cl }] = await Promise.all([
+      supabase.from("supplies").select("id", { count: "exact", head: true }).eq("member_id", data.id),
+      supabase.from("invoices").select("id", { count: "exact", head: true }).eq("member_id", data.id),
+      supabase.from("claims").select("id", { count: "exact", head: true }).eq("member_id", data.id),
+    ]);
+    const blockers: string[] = [];
+    if ((sup ?? 0) > 0) blockers.push(`${sup} suministro(s)`);
+    if ((inv ?? 0) > 0) blockers.push(`${inv} factura(s)`);
+    if ((cl ?? 0) > 0) blockers.push(`${cl} reclamo(s)`);
+    if (blockers.length) throw new Error(`No se puede eliminar: tiene ${blockers.join(", ")}. Marcalo como inactivo en su lugar.`);
+    const { error } = await supabase.from("members").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -189,6 +215,55 @@ export const updateSupplyStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const SupplyPatch = z.object({
+  supply_number: z.string().trim().min(1).max(40).optional(),
+  service_type: z.enum(["water", "gas", "electricity"]).optional(),
+  status: z.enum(["active", "suspended", "inactive", "pending"]).optional(),
+  tariff_category: z.string().trim().max(60).optional().or(z.literal("")),
+  activated_at: z.string().optional().or(z.literal("")),
+});
+
+export const updateSupply = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ id: z.string().uuid(), patch: SupplyPatch }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureStaff(supabase, userId);
+    const patch: any = { ...data.patch };
+    if (patch.tariff_category === "") patch.tariff_category = null;
+    if (patch.activated_at === "") patch.activated_at = null;
+    const { error } = await supabase.from("supplies").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteSupply = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    const [{ count: inv }, { count: cl }, { count: mt }] = await Promise.all([
+      supabase.from("invoices").select("id", { count: "exact", head: true }).eq("supply_id", data.id),
+      supabase.from("claims").select("id", { count: "exact", head: true }).eq("supply_id", data.id),
+      supabase.from("meters").select("id", { count: "exact", head: true }).eq("supply_id", data.id),
+    ]);
+    const blockers: string[] = [];
+    if ((inv ?? 0) > 0) blockers.push(`${inv} factura(s)`);
+    if ((cl ?? 0) > 0) blockers.push(`${cl} reclamo(s)`);
+    if ((mt ?? 0) > 0) blockers.push(`${mt} medidor(es)`);
+    if (blockers.length) throw new Error(`No se puede eliminar: tiene ${blockers.join(", ")}.`);
+    const { data: row } = await supabase.from("supplies").select("address_id").eq("id", data.id).single();
+    const { error } = await supabase.from("supplies").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    if (row?.address_id) {
+      await supabase.from("supply_addresses").delete().eq("id", row.address_id);
+    }
+    return { ok: true };
+  });
+
 // ---------- Meters ----------
 const MeterInput = z.object({
   supply_id: z.string().uuid(),
@@ -235,6 +310,39 @@ export const createMeter = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
     return row;
+  });
+
+export const updateMeter = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) =>
+    z.object({ id: z.string().uuid(), patch: MeterInput.partial() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureStaff(supabase, userId);
+    const patch: any = { ...data.patch };
+    if (patch.brand === "") patch.brand = null;
+    if (patch.model === "") patch.model = null;
+    if (patch.installed_at === "") patch.installed_at = null;
+    const { error } = await supabase.from("meters").update(patch).eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteMeter = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await ensureAdmin(supabase, userId);
+    const { count } = await supabase
+      .from("meter_readings")
+      .select("id", { count: "exact", head: true })
+      .eq("meter_id", data.id);
+    if ((count ?? 0) > 0) throw new Error(`No se puede eliminar: el medidor tiene ${count} lectura(s).`);
+    const { error } = await supabase.from("meters").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 // ---------- Client-facing ----------

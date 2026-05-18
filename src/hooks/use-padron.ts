@@ -5,12 +5,17 @@ import {
   createMember,
   createMeter,
   createSupply,
+  deleteMember,
+  deleteMeter,
+  deleteSupply,
   linkMyMember,
   listMembers,
   listMetersBySupply,
   listMyMemberAndSupplies,
   listSupplies,
   updateMember,
+  updateMeter,
+  updateSupply,
   updateSupplyStatus,
 } from "@/lib/padron.functions";
 
@@ -48,6 +53,19 @@ export function useUpdateMember() {
   });
 }
 
+export function useDeleteMember() {
+  const fn = useServerFn(deleteMember);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fn({ data: { id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["padron", "members"] });
+      toast.success("Socio eliminado");
+    },
+    onError: (e: Error) => toast.error("No se pudo eliminar", { description: e.message }),
+  });
+}
+
 export function useSupplies(filters: { search?: string; service_type?: string; status?: string }) {
   const fn = useServerFn(listSupplies);
   return useQuery({
@@ -82,6 +100,34 @@ export function useUpdateSupplyStatus() {
   });
 }
 
+export function useUpdateSupply() {
+  const fn = useServerFn(updateSupply);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: string; patch: any }) => fn({ data: vars }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["padron", "supplies"] });
+      qc.invalidateQueries({ queryKey: ["billing", "supplies-lite"] });
+      toast.success("Suministro actualizado");
+    },
+    onError: (e: Error) => toast.error("No se pudo actualizar", { description: e.message }),
+  });
+}
+
+export function useDeleteSupply() {
+  const fn = useServerFn(deleteSupply);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => fn({ data: { id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["padron", "supplies"] });
+      qc.invalidateQueries({ queryKey: ["billing", "supplies-lite"] });
+      toast.success("Suministro eliminado");
+    },
+    onError: (e: Error) => toast.error("No se pudo eliminar", { description: e.message }),
+  });
+}
+
 export function useMeters(supplyId: string | null) {
   const fn = useServerFn(listMetersBySupply);
   return useQuery({
@@ -101,6 +147,35 @@ export function useCreateMeter() {
       toast.success("Medidor registrado");
     },
     onError: (e: Error) => toast.error("No se pudo registrar", { description: e.message }),
+  });
+}
+
+export function useUpdateMeter() {
+  const fn = useServerFn(updateMeter);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: string; patch: any; supply_id?: string }) =>
+      fn({ data: { id: vars.id, patch: vars.patch } }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["padron", "meters", vars.supply_id] });
+      qc.invalidateQueries({ queryKey: ["padron", "meters"] });
+      toast.success("Medidor actualizado");
+    },
+    onError: (e: Error) => toast.error("No se pudo actualizar", { description: e.message }),
+  });
+}
+
+export function useDeleteMeter() {
+  const fn = useServerFn(deleteMeter);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: string; supply_id?: string }) => fn({ data: { id: vars.id } }),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["padron", "meters", vars.supply_id] });
+      qc.invalidateQueries({ queryKey: ["padron", "meters"] });
+      toast.success("Medidor eliminado");
+    },
+    onError: (e: Error) => toast.error("No se pudo eliminar", { description: e.message }),
   });
 }
 

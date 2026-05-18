@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useMembers } from "@/hooks/use-padron";
+import { useDeleteMember } from "@/hooks/use-padron";
+import { DeleteButton } from "@/components/admin/delete-button";
 
 export const Route = createFileRoute("/_authenticated/admin/socios")({
   head: () => ({ meta: [{ title: "Socios — Coopecur 2.0" }] }),
@@ -26,6 +28,7 @@ export function SociosPage() {
   useEffect(() => { if (!auth.isLoading && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth, navigate]);
 
   const { data, isLoading } = useMembers(debounced);
+  const del = useDeleteMember();
 
   if (auth.isLoading || !auth.isAdminOrOperator) {
     return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -59,13 +62,14 @@ export function SociosPage() {
                 <TableRow>
                   <TableHead>N° socio</TableHead><TableHead>Nombre</TableHead><TableHead>Documento</TableHead>
                   <TableHead>Contacto</TableHead><TableHead>Cuenta</TableHead><TableHead>Estado</TableHead>
+                  <TableHead className="w-20 text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={6} className="py-10 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" /></TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="py-10 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" /></TableCell></TableRow>
                 ) : (data ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">Sin socios cargados.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">Sin socios cargados.</TableCell></TableRow>
                 ) : (
                   (data ?? []).map((m: any) => (
                     <TableRow key={m.id}>
@@ -78,6 +82,14 @@ export function SociosPage() {
                       <TableCell>{m.user_id ? <Badge variant="outline">Vinculada</Badge> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
                       <TableCell>
                         <Badge variant={m.status === "active" ? "default" : m.status === "suspended" ? "destructive" : "secondary"}>{m.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DeleteButton
+                          iconOnly
+                          title={`¿Eliminar socio ${m.full_name}?`}
+                          description="Se eliminará el socio definitivamente. Si tiene suministros, facturas o reclamos, la operación será rechazada."
+                          onConfirm={() => del.mutate(m.id)}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
