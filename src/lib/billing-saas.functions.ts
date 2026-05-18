@@ -30,7 +30,20 @@ export const getCurrentSubscription = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context as any;
-    const tid = await getTenantId(supabase);
+    const { data: tid, error: tidErr } = await supabase.rpc("current_tenant_id");
+    if (tidErr) throw new Error(`Tenant: ${tidErr.message}`);
+    if (!tid) {
+      // Super admin or user without tenant — return empty state
+      return {
+        tenant: null,
+        plan: null,
+        lastEvent: null,
+        trialDaysLeft: null,
+        providerConfigured: false,
+        providerId: null as string | null,
+        noTenant: true as const,
+      };
+    }
     const { data: tenant, error } = await supabase
       .from("tenants")
       .select(
