@@ -20,16 +20,13 @@ export const attachActingTenant = createMiddleware({ type: "function" })
  * the supabase client so PostgREST receives the header on every query.
  * Should run AFTER `requireSupabaseAuth`.
  */
-export const withActingTenant = createMiddleware({ type: "function" })
-  .server(async ({ next, context }) => {
+export const withActingTenant = createMiddleware({ type: "function" }).server(
+  async ({ next, context }) => {
     const acting = getRequestHeader("x-acting-tenant");
-    if (!acting) return next();
-
-    const ctx = context as { supabase?: { realtime?: unknown } };
-    // Reuse existing token from incoming request to keep RLS as the user
+    if (!acting) return next() as never;
     const authHeader =
       getRequestHeader("authorization") || getRequestHeader("Authorization");
-    if (!authHeader) return next();
+    if (!authHeader) return next() as never;
 
     const SUPABASE_URL = process.env.SUPABASE_URL!;
     const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY!;
@@ -41,8 +38,14 @@ export const withActingTenant = createMiddleware({ type: "function" })
           "x-acting-tenant": acting,
         },
       },
-      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+      auth: {
+        storage: undefined,
+        persistSession: false,
+        autoRefreshToken: false,
+      },
     });
 
-    return next({ context: { ...(context as object), supabase } });
-  });
+    const merged = { ...(context as object), supabase };
+    return next({ context: merged }) as never;
+  },
+);
