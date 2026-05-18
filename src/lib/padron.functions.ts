@@ -259,3 +259,22 @@ export const listMyMemberAndSupplies = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return { member, supplies: supplies ?? [] };
   });
+
+// ---------- Self-service link ----------
+const LinkMyMemberInput = z.object({
+  member_number: z.string().trim().min(1).max(40).regex(/^[0-9A-Za-z\-_.]+$/, "Formato inválido"),
+  document_id: z.string().trim().min(6).max(20).regex(/^[0-9A-Za-z.\-]+$/, "Formato inválido"),
+});
+
+export const linkMyMember = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i: unknown) => LinkMyMemberInput.parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: memberId, error } = await supabase.rpc("link_my_member", {
+      _member_number: data.member_number,
+      _document_id: data.document_id,
+    });
+    if (error) throw new Error(error.message);
+    return { member_id: memberId as string };
+  });
