@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withActingTenant } from "@/lib/acting-tenant-middleware";
 import {
   getBillingProvider,
   BillingNotConfiguredError,
@@ -27,7 +28,7 @@ async function ensureAdmin(supabase: any): Promise<string> {
 
 // ---------- Read current subscription ----------
 export const getCurrentSubscription = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .handler(async ({ context }) => {
     const { supabase } = context as any;
     const { data: tid, error: tidErr } = await supabase.rpc("current_tenant_id");
@@ -89,7 +90,7 @@ export const getCurrentSubscription = createServerFn({ method: "GET" })
 
 // ---------- List available plans ----------
 export const listPlans = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .handler(async ({ context }) => {
     const { supabase } = context as any;
     const { data, error } = await supabase
@@ -104,7 +105,7 @@ export const listPlans = createServerFn({ method: "GET" })
 
 // ---------- Create checkout session ----------
 export const createCheckoutSession = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator(
     z.object({
       planId: z.string().uuid(),
@@ -160,7 +161,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
 
 // ---------- Cancel ----------
 export const cancelSubscription = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .handler(async ({ context }) => {
     const { supabase } = context as any;
     const tid = await ensureAdmin(supabase);

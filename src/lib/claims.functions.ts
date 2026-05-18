@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withActingTenant } from "@/lib/acting-tenant-middleware";
 
 async function getTenantId(supabase: any): Promise<string> {
   const { data, error } = await supabase.rpc("current_tenant_id");
@@ -74,7 +75,7 @@ async function nextClaimNumber(supabase: any) {
 }
 
 export const listClaims = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z
       .object({
@@ -104,7 +105,7 @@ export const listClaims = createServerFn({ method: "GET" })
   });
 
 export const getClaim = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -132,7 +133,7 @@ export const getClaim = createServerFn({ method: "GET" })
   });
 
 export const createClaim = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => ClaimCreateInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -167,7 +168,7 @@ export const createClaim = createServerFn({ method: "POST" })
   });
 
 export const updateClaimStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z.object({ id: z.string().uuid(), status: Status, priority: Priority.optional() }).parse(i),
   )
@@ -192,7 +193,7 @@ const ClaimPatch = z.object({
 });
 
 export const updateClaim = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z.object({ id: z.string().uuid(), patch: ClaimPatch }).parse(i),
   )
@@ -208,7 +209,7 @@ export const updateClaim = createServerFn({ method: "POST" })
   });
 
 export const deleteClaim = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -221,7 +222,7 @@ export const deleteClaim = createServerFn({ method: "POST" })
   });
 
 export const deleteClaimComment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -232,7 +233,7 @@ export const deleteClaimComment = createServerFn({ method: "POST" })
   });
 
 export const addClaimComment = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z
       .object({
@@ -267,7 +268,7 @@ const CrewInput = z.object({
 });
 
 export const listCrews = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     await ensureStaff(supabase, userId);
@@ -280,7 +281,7 @@ export const listCrews = createServerFn({ method: "GET" })
   });
 
 export const upsertCrew = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z.object({ id: z.string().uuid().optional(), patch: CrewInput }).parse(i),
   )
@@ -299,7 +300,7 @@ export const upsertCrew = createServerFn({ method: "POST" })
   });
 
 export const deleteCrew = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -322,7 +323,7 @@ const WOInput = z.object({
 });
 
 export const createWorkOrder = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => WOInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -344,7 +345,7 @@ export const createWorkOrder = createServerFn({ method: "POST" })
   });
 
 export const updateWorkOrderStatus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z
       .object({
@@ -388,7 +389,7 @@ const WOPatch = z.object({
 });
 
 export const updateWorkOrder = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z.object({ id: z.string().uuid(), patch: WOPatch }).parse(i),
   )
@@ -405,7 +406,7 @@ export const updateWorkOrder = createServerFn({ method: "POST" })
   });
 
 export const deleteWorkOrder = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -417,7 +418,7 @@ export const deleteWorkOrder = createServerFn({ method: "POST" })
 
 // ---------- Client-facing ----------
 export const listMyClaims = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data: member } = await supabase

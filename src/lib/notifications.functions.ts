@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { withActingTenant } from "@/lib/acting-tenant-middleware";
 
 export const listMyNotifications = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data, error } = await supabase
@@ -17,7 +18,7 @@ export const listMyNotifications = createServerFn({ method: "GET" })
   });
 
 export const markNotificationRead = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -31,7 +32,7 @@ export const markNotificationRead = createServerFn({ method: "POST" })
   });
 
 export const markAllNotificationsRead = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { error } = await supabase
@@ -45,7 +46,7 @@ export const markAllNotificationsRead = createServerFn({ method: "POST" })
 
 // ---- Audit (admin only) ----
 export const listAuditLog = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireSupabaseAuth, withActingTenant])
   .inputValidator((i: unknown) =>
     z
       .object({
