@@ -1,6 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Loader2, Plus, Users } from "lucide-react";
+import { Loader2, LogIn, Plus, Users } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { setActingTenant } from "@/lib/acting-tenant";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +59,14 @@ function TenantsPage() {
   const [editing, setEditing] = useState<any | null>(null);
   const [membersOf, setMembersOf] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const impersonate = (t: any) => {
+    setActingTenant(t.id, t.name);
+    qc.invalidateQueries();
+    navigate({ to: "/admin" });
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -120,6 +130,14 @@ function TenantsPage() {
                     </TableCell>
                     <TableCell>{t.members_count}</TableCell>
                     <TableCell className="text-right space-x-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => impersonate(t)}
+                        title="Acceder al backoffice como esta cooperativa"
+                      >
+                        <LogIn className="mr-1 h-4 w-4" /> Acceder
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
