@@ -24,6 +24,7 @@ export function setActingTenant(id: string, name?: string) {
   try {
     window.localStorage.setItem(KEY, id);
     if (name) window.localStorage.setItem(NAME_KEY, name);
+    window.dispatchEvent(new Event("acting-tenant-changed"));
   } catch {
     // ignore
   }
@@ -34,6 +35,7 @@ export function clearActingTenant() {
   try {
     window.localStorage.removeItem(KEY);
     window.localStorage.removeItem(NAME_KEY);
+    window.dispatchEvent(new Event("acting-tenant-changed"));
   } catch {
     // ignore
   }
