@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS idx_subscription_events_tenant_created ON public.subscription_events (tenant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_subscription_events_created ON public.subscription_events (created_at DESC);
