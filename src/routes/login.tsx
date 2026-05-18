@@ -25,13 +25,15 @@ export const Route = createFileRoute("/login")({
     const { data } = await supabase.auth.getSession();
     const user = data.session?.user;
     if (!user) return;
-    const { data: roleRows } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id);
+    const [{ data: roleRows }, { data: superRow }] = await Promise.all([
+      supabase.from("user_roles").select("role").eq("user_id", user.id),
+      supabase.from("super_admins").select("user_id").eq("user_id", user.id).maybeSingle(),
+    ]);
     const roles = (roleRows ?? []).map((r) => r.role as string);
     const isStaff = roles.includes("admin") || roles.includes("operator");
-    throw redirect({ to: isStaff ? "/admin" : "/cliente", replace: true });
+    const isSuper = !!superRow;
+    const dest = isSuper ? "/super" : isStaff ? "/admin" : "/cliente";
+    throw redirect({ to: dest, replace: true });
   },
   component: LoginPage,
 });
