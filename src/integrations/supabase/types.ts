@@ -1253,6 +1253,7 @@ export type Database = {
         Args: { _invoice_id: string }
         Returns: undefined
       }
+      set_acting_tenant: { Args: { _tid: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "operator" | "client"
