@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, FileText, Gauge, LayoutDashboard, LogOut, Receipt, ShieldCheck, Users, Wrench } from "lucide-react";
+import { Building2, FileText, Gauge, LayoutDashboard, LogOut, Receipt, ShieldCheck, Users, Wallet, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,7 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
     { label: "Socios", icon: Users, to: "/admin/socios", enabled: true },
     { label: "Suministros", icon: Gauge, to: "/admin/suministros", enabled: true },
     { label: "Facturación", icon: Receipt, to: "/admin/facturacion", enabled: true },
+    { label: "Tarifas", icon: Wallet, to: "/admin/tarifas", enabled: true },
     { label: "Reclamos", icon: Wrench, to: "/admin/reclamos", enabled: true },
     { label: "Auditoría", icon: FileText, to: "/admin/auditoria", enabled: true, adminOnly: true },
   ];
