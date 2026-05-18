@@ -5,31 +5,28 @@ import { DEFAULT_TAB, MODULE_REGISTRY, type ModuleKey } from "./module-registry"
 
 export type ModuleTab = {
   kind: "module";
-  id: string; // `mod:${moduleKey}`
+  id: string;
   moduleKey: ModuleKey;
 };
 
 export type ViewTab = {
   kind: "view";
-  id: string; // caller-supplied unique id, e.g. `view:factura.detail:<uuid>`
-  viewKey: string; // key in dynamic-views registry
+  id: string;
+  viewKey: string;
   title: string;
   iconKey?: string;
-  /** Module the view "belongs to" — used as fallback when closing. */
   parentModule?: ModuleKey;
   payload?: Record<string, any>;
 };
 
 export type WorkspaceTab = ModuleTab | ViewTab;
 
-const moduleId = (k: ModuleKey) => `mod:${k}`;
+export const moduleId = (k: ModuleKey) => `mod:${k}`;
 
 interface WorkspaceState {
   openTabs: WorkspaceTab[];
   activeId: string;
-  /** Open a module tab (idempotent). */
   openModule: (key: ModuleKey, opts?: { focus?: boolean }) => void;
-  /** Open or focus a dynamic view tab. */
   openView: (spec: Omit<ViewTab, "kind">, opts?: { focus?: boolean }) => void;
   setActive: (id: string) => void;
   closeTab: (id: string) => void;
@@ -56,10 +53,10 @@ function loadPersisted(userId: string | undefined): Persisted | null {
     const raw = sessionStorage.getItem(storageKey(userId));
     if (!raw) return null;
     const data = JSON.parse(raw) as Persisted;
-    const tabs = (data.tabs ?? []).filter((t): t is WorkspaceTab => {
+    const tabs = (data.tabs ?? []).filter((t: any): t is WorkspaceTab => {
       if (!t || typeof t !== "object") return false;
-      if (t.kind === "module") return (t as ModuleTab).moduleKey in MODULE_REGISTRY;
-      if (t.kind === "view") return typeof (t as ViewTab).viewKey === "string" && typeof t.id === "string";
+      if (t.kind === "module") return t.moduleKey in MODULE_REGISTRY;
+      if (t.kind === "view") return typeof t.viewKey === "string" && typeof t.id === "string";
       return false;
     });
     const hasDefault = tabs.some((t) => t.kind === "module" && t.moduleKey === DEFAULT_TAB);
@@ -89,7 +86,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return p?.active ?? moduleId(DEFAULT_TAB);
   });
 
-  // Persist
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -100,9 +96,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     } catch { /* ignore */ }
   }, [openTabs, activeId, userId]);
 
-  // Avoid navigate loop: only navigate when we change active programmatically
   const skipNav = useRef(false);
-
   const tabsRef = useRef(openTabs);
   useEffect(() => { tabsRef.current = openTabs; }, [openTabs]);
 
@@ -117,7 +111,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           navigate({ to: mod.routeTo, replace: true });
         }
       }
-      // View tabs don't navigate — URL stays on whatever module is current.
       return id;
     });
   }, [navigate]);
@@ -131,11 +124,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const openView = useCallback((spec: Omit<ViewTab, "kind">, opts?: { focus?: boolean }) => {
     const focus = opts?.focus ?? true;
-    setOpenTabs((cur) => {
-      const existing = cur.find((t) => t.id === spec.id);
-      if (existing) return cur;
-      return [...cur, { kind: "view", ...spec }];
-    });
+    setOpenTabs((cur) => (cur.some((t) => t.id === spec.id) ? cur : [...cur, { kind: "view", ...spec }]));
     if (focus) setActiveId(spec.id);
   }, []);
 
@@ -192,7 +181,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [navigate]);
 
-  // Keyboard: Ctrl/Cmd+W to close current
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w") {
@@ -222,10 +210,6 @@ export function useWorkspace(): WorkspaceState {
   return ctx;
 }
 
-/**
- * Route-side hook: each admin.<module>.tsx route uses this in a useEffect to
- * ensure the workspace tab exists and is focused when that URL loads.
- */
 export function useEnsureTab(key: ModuleKey) {
   const ws = useContext(WorkspaceCtx);
   useEffect(() => {
@@ -233,94 +217,10 @@ export function useEnsureTab(key: ModuleKey) {
     ws.openModule(key, { focus: true });
   }, [ws, key]);
 }
-        skipNav.current = true;
-        navigate({ to: mod.routeTo, replace: true });
-      }
-      return key;
-    });
-  }, [navigate]);
 
-  const openTab = useCallback((key: ModuleKey, opts?: { focus?: boolean }) => {
-    const focus = opts?.focus ?? true;
-    setOpenTabs((cur) => (cur.includes(key) ? cur : [...cur, key]));
-    if (focus) setActiveTab(key);
-  }, []);
+/** Hook for view components to find their own tab id from context. */
+export const ViewTabContext = createContext<{ tabId: string } | null>(null);
 
-  const closeTab = useCallback((key: ModuleKey) => {
-    if (MODULE_REGISTRY[key]?.pinned) return;
-    setOpenTabs((cur) => {
-      const idx = cur.indexOf(key);
-      if (idx < 0) return cur;
-      const next = cur.filter((k) => k !== key);
-      if (activeTab === key) {
-        const fallback = next[idx - 1] ?? next[0] ?? DEFAULT_TAB;
-        setActiveTab(fallback);
-        const mod = MODULE_REGISTRY[fallback];
-        if (mod) {
-          skipNav.current = true;
-          navigate({ to: mod.routeTo, replace: true });
-        }
-      }
-      return next.length ? next : [DEFAULT_TAB];
-    });
-  }, [activeTab, navigate]);
-
-  const closeOthers = useCallback((key: ModuleKey) => {
-    setOpenTabs((cur) => cur.filter((k) => k === key || MODULE_REGISTRY[k]?.pinned));
-    setActive(key);
-  }, [setActive]);
-
-  const closeToRight = useCallback((key: ModuleKey) => {
-    setOpenTabs((cur) => {
-      const idx = cur.indexOf(key);
-      if (idx < 0) return cur;
-      return cur.filter((k, i) => i <= idx || MODULE_REGISTRY[k]?.pinned);
-    });
-    setActive(key);
-  }, [setActive]);
-
-  const closeAll = useCallback(() => {
-    setOpenTabs([DEFAULT_TAB]);
-    setActive(DEFAULT_TAB);
-  }, [setActive]);
-
-  // Keyboard: Ctrl/Cmd+W to close current
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "w") {
-        if (MODULE_REGISTRY[activeTab]?.pinned) return;
-        e.preventDefault();
-        closeTab(activeTab);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [activeTab, closeTab]);
-
-  const value = useMemo<WorkspaceState>(() => ({
-    openTabs, activeTab, openTab, setActive, closeTab, closeOthers, closeToRight, closeAll,
-  }), [openTabs, activeTab, openTab, setActive, closeTab, closeOthers, closeToRight, closeAll]);
-
-  // Consume the navigation skip flag once route effects fire
-  useEffect(() => { skipNav.current = false; });
-
-  return <WorkspaceCtx.Provider value={value}>{children}</WorkspaceCtx.Provider>;
-}
-
-export function useWorkspace(): WorkspaceState {
-  const ctx = useContext(WorkspaceCtx);
-  if (!ctx) throw new Error("useWorkspace must be used within WorkspaceProvider");
-  return ctx;
-}
-
-/**
- * Route-side hook: each admin.<module>.tsx route uses this in a useEffect to
- * ensure the workspace tab exists and is focused when that URL loads.
- */
-export function useEnsureTab(key: ModuleKey) {
-  const ws = useContext(WorkspaceCtx);
-  useEffect(() => {
-    if (!ws) return;
-    ws.openTab(key, { focus: true });
-  }, [ws, key]);
+export function useViewTab() {
+  return useContext(ViewTabContext);
 }
