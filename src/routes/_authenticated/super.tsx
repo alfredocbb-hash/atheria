@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import * as React from "react";
 import { Activity, Building2, CreditCard, LayoutDashboard, LayoutGrid, ListTree, Loader2, LogOut, Receipt } from "lucide-react";
 import { getActingTenantId } from "@/lib/acting-tenant";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,8 @@ function SuperLayoutRoute() {
   const auth = useAuth();
   const navigate = useNavigate();
   const sa = useIsSuperAdmin();
-  const [hasActing, setHasActing] = useState(false);
-  useEffect(() => {
+  const [hasActing, setHasActing] = React.useState(false);
+  React.useEffect(() => {
     const sync = () => setHasActing(!!getActingTenantId());
     sync();
     window.addEventListener("storage", sync);
@@ -28,7 +28,7 @@ function SuperLayoutRoute() {
     };
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (!sa.isLoading && sa.data && !sa.data.isSuperAdmin) {
       navigate({ to: "/", replace: true });
     }
