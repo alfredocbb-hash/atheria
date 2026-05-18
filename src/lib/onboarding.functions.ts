@@ -57,7 +57,7 @@ export const createMyTenant = createServerFn({ method: "POST" })
       .eq("user_id", userId)
       .limit(1);
     if ((existing ?? []).length > 0) {
-      throw new Error("Ya pertenecés a una cooperativa");
+      return { ok: false as const, error: "Ya pertenecés a una cooperativa" };
     }
 
     // Use admin client to bypass RLS (no INSERT policy on tenants for regular users)
@@ -69,7 +69,9 @@ export const createMyTenant = createServerFn({ method: "POST" })
       .select("id")
       .eq("slug", data.slug)
       .maybeSingle();
-    if (dup) throw new Error("El identificador ya está en uso");
+    if (dup) {
+      return { ok: false as const, error: "El identificador ya está en uso" };
+    }
 
     const trialEndsAt = new Date(Date.now() + 14 * 86_400_000).toISOString();
 
@@ -115,5 +117,5 @@ export const createMyTenant = createServerFn({ method: "POST" })
       _metadata: {},
     });
 
-    return { id: t.id, slug: data.slug };
+    return { ok: true as const, id: t.id, slug: data.slug };
   });
