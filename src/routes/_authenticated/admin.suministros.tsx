@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useSupplies, useUpdateSupplyStatus } from "@/hooks/use-padron";
+import { useSupplies, useUpdateSupplyStatus, useDeleteSupply } from "@/hooks/use-padron";
+import { DeleteButton } from "@/components/admin/delete-button";
 
 export const Route = createFileRoute("/_authenticated/admin/suministros")({
   head: () => ({ meta: [{ title: "Suministros — Coopecur 2.0" }] }),
@@ -41,6 +42,7 @@ export function SuministrosPage() {
   };
   const { data, isLoading } = useSupplies(filters);
   const updateStatus = useUpdateSupplyStatus();
+  const del = useDeleteSupply();
 
   if (auth.isLoading || !auth.isAdminOrOperator) {
     return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
@@ -132,6 +134,12 @@ export function SuministrosPage() {
                             })}>Gestionar medidores</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        <DeleteButton
+                          iconOnly
+                          title={`¿Eliminar suministro ${s.supply_number}?`}
+                          description="Si tiene medidores o facturas activas, la operación será rechazada."
+                          onConfirm={() => del.mutate(s.id)}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
