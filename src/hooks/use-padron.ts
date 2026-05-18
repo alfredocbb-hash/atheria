@@ -5,6 +5,7 @@ import {
   createMember,
   createMeter,
   createSupply,
+  linkMyMember,
   listMembers,
   listMetersBySupply,
   listMyMemberAndSupplies,
@@ -108,5 +109,20 @@ export function useMyPadron() {
   return useQuery({
     queryKey: ["padron", "self"],
     queryFn: () => fn({}),
+  });
+}
+
+export function useLinkMyMember() {
+  const fn = useServerFn(linkMyMember);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { member_number: string; document_id: string }) => fn({ data: vars }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["padron", "self"] });
+      qc.invalidateQueries({ queryKey: ["billing", "my-invoices"] });
+      qc.invalidateQueries({ queryKey: ["claims", "mine"] });
+      toast.success("Cuenta vinculada");
+    },
+    onError: (e: Error) => toast.error("No se pudo vincular", { description: e.message }),
   });
 }
