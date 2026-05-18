@@ -3,7 +3,7 @@ import { useEnsureTab, useWorkspace } from "@/components/workspace/workspace-con
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Search, Wrench } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,21 +32,14 @@ export function ReclamosPage() {
   const navigate = useNavigate();
   useEffect(() => { if (!auth.isLoading && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth, navigate]);
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Operaciones</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Reclamos y despacho</h1>
-        <p className="text-sm text-muted-foreground">Atención de incidentes, asignación a cuadrillas y seguimiento.</p>
-      </div>
-      <Tabs defaultValue="claims">
+    <Tabs defaultValue="claims" className="space-y-4">
         <TabsList>
           <TabsTrigger value="claims">Reclamos</TabsTrigger>
           <TabsTrigger value="crews">Cuadrillas</TabsTrigger>
         </TabsList>
-        <TabsContent value="claims" className="mt-4"><ClaimsTab /></TabsContent>
-        <TabsContent value="crews" className="mt-4"><CrewsTab /></TabsContent>
-      </Tabs>
-    </div>
+        <TabsContent value="claims"><ClaimsTab /></TabsContent>
+        <TabsContent value="crews"><CrewsTab /></TabsContent>
+    </Tabs>
   );
 }
 
@@ -73,10 +66,7 @@ function ClaimsTab() {
   const { data: rows = [], isLoading } = useClaims(filters);
   return (
     <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle className="text-base">Listado de reclamos</CardTitle>
-          <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 border-b p-3">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar nº, título o ubicación..." className="w-64 pl-8" />
@@ -95,10 +85,11 @@ function ClaimsTab() {
                 {Object.entries(PRIORITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
               </SelectContent>
             </Select>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
+        <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:reclamo.detail:new", viewKey: "reclamo.detail", title: "Nuevo reclamo", iconKey: "wrench", parentModule: "reclamos" })}>
+          <Plus className="mr-1 h-4 w-4" />Nuevo reclamo
+        </Button>
+      </div>
+      <CardContent className="pt-4">
         {isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
         ) : rows.length === 0 ? (
@@ -157,15 +148,12 @@ function CrewsTab() {
   const del = useDeleteCrew();
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Cuadrillas</CardTitle>
-          <Button size="sm" onClick={() => ws.openView({ id: "view:cuadrilla.edit:new", viewKey: "cuadrilla.edit", title: "Nueva cuadrilla", iconKey: "wrench", parentModule: "reclamos" })}>
+      <div className="flex flex-wrap items-center gap-2 border-b p-3">
+        <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:cuadrilla.edit:new", viewKey: "cuadrilla.edit", title: "Nueva cuadrilla", iconKey: "wrench", parentModule: "reclamos" })}>
             <Plus className="mr-1 h-4 w-4" />Nueva
           </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <CardContent className="pt-4">
         {isLoading ? (
           <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
         ) : crews.length === 0 ? (
