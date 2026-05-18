@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -32,17 +32,11 @@ export function TarifasPage() {
   const ws = useWorkspace();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Operaciones</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Tarifas</h1>
-        <p className="text-sm text-muted-foreground">Cuadros tarifarios vigentes por servicio.</p>
-      </div>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Tarifas vigentes</CardTitle>
-          <Button
+    <Card>
+      <div className="flex flex-wrap items-center gap-2 border-b p-3">
+        <Button
             size="sm"
+            className="ml-auto"
             onClick={() =>
               ws.openView({
                 id: "view:tarifa.new",
@@ -56,8 +50,8 @@ export function TarifasPage() {
             <Plus className="mr-1 h-4 w-4" />
             Nueva tarifa
           </Button>
-        </CardHeader>
-        <CardContent>
+      </div>
+      <CardContent className="pt-4">
           {isLoading ? (
             <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
           ) : (
@@ -115,8 +109,7 @@ export function TarifasPage() {
             </Table>
           )}
         </CardContent>
-      </Card>
-    </div>
+    </Card>
   );
 }
 

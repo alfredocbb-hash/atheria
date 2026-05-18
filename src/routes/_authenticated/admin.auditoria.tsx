@@ -3,7 +3,7 @@ import { useEnsureTab } from "@/components/workspace/workspace-context";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -35,18 +35,8 @@ export function AuditPage() {
   const { data: rows = [], isLoading } = useAuditLog(filters);
 
   return (
-    
-      <div className="space-y-6">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Cumplimiento</p>
-          <h1 className="text-2xl font-semibold tracking-tight">Registro de auditoría</h1>
-          <p className="text-sm text-muted-foreground">Trazabilidad inmutable de eventos del sistema (solo admin).</p>
-        </div>
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <CardTitle className="text-base">Eventos recientes</CardTitle>
-              <div className="flex flex-wrap items-center gap-2">
+    <Card>
+      <div className="flex flex-wrap items-center gap-2 border-b p-3">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar acción o email..." className="w-64 pl-8" />
@@ -58,10 +48,8 @@ export function AuditPage() {
                     {Object.entries(ENTITY_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
+      </div>
+      <CardContent className="pt-4">
             {isLoading ? (
               <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
             ) : rows.length === 0 ? (
@@ -93,9 +81,7 @@ export function AuditPage() {
               </Table>
             )}
           </CardContent>
-        </Card>
-      </div>
-    
+    </Card>
   );
 }
 

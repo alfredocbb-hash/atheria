@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEnsureTab, useWorkspace } from "@/components/workspace/workspace-context";
 import { useEffect, useState } from "react";
-import { Droplets, Flame, Gauge, Loader2, Plus, Search, Zap } from "lucide-react";
+import { Droplets, Flame, Loader2, Plus, Search, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,35 +49,21 @@ export function SuministrosPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Padrones</p>
-          <h1 className="text-2xl font-semibold tracking-tight">Suministros</h1>
-          <p className="text-sm text-muted-foreground">Cuentas de servicio (agua, gas, electricidad) por socio.</p>
+    <Card>
+      <div className="flex flex-wrap items-center gap-2 border-b p-3">
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar por n° suministro o tarifa…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <Button onClick={() => ws.openView({ id: "view:suministro.new", viewKey: "suministro.new", title: "Nuevo suministro", iconKey: "plus", parentModule: "suministros" })}>
-          <Plus className="mr-2 h-4 w-4" />Nuevo suministro
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2"><Gauge className="h-4 w-4" />Listado</CardTitle>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <div className="relative flex-1 min-w-[220px]">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar por n° suministro o tarifa…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
-            </div>
-            <Select value={svcFilter} onValueChange={setSvcFilter}>
-              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Servicio" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los servicios</SelectItem>
-                <SelectItem value="water">Agua</SelectItem>
-                <SelectItem value="gas">Gas</SelectItem>
-                <SelectItem value="electricity">Electricidad</SelectItem>
-              </SelectContent>
-            </Select>
+        <Select value={svcFilter} onValueChange={setSvcFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="Servicio" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los servicios</SelectItem>
+            <SelectItem value="water">Agua</SelectItem>
+            <SelectItem value="gas">Gas</SelectItem>
+            <SelectItem value="electricity">Electricidad</SelectItem>
+          </SelectContent>
+        </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[160px]"><SelectValue placeholder="Estado" /></SelectTrigger>
               <SelectContent>
@@ -88,9 +74,11 @@ export function SuministrosPage() {
                 <SelectItem value="inactive">Baja</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </CardHeader>
-        <CardContent>
+        <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:suministro.new", viewKey: "suministro.new", title: "Nuevo suministro", iconKey: "plus", parentModule: "suministros" })}>
+          <Plus className="mr-1 h-4 w-4" />Nuevo suministro
+        </Button>
+      </div>
+      <CardContent className="pt-4">
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -148,8 +136,7 @@ export function SuministrosPage() {
             </Table>
           </div>
         </CardContent>
-      </Card>
-    </div>
+    </Card>
   );
 }
 
