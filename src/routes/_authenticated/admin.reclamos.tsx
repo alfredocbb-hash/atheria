@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useClaims, useCrews } from "@/hooks/use-claims";
+import { useClaims, useCrews, useDeleteClaim, useDeleteCrew } from "@/hooks/use-claims";
+import { DeleteButton } from "@/components/admin/delete-button";
 
 export const Route = createFileRoute("/_authenticated/admin/reclamos")({
   head: () => ({ meta: [{ title: "Reclamos — Coopecur 2.0" }] }),
@@ -63,6 +64,7 @@ function ClaimsTab() {
   const [status, setStatus] = useState<string>("all");
   const [priority, setPriority] = useState<string>("all");
   const ws = useWorkspace();
+  const del = useDeleteClaim();
   const filters = useMemo(() => ({
     search: search || undefined,
     status: status === "all" ? undefined : status,
@@ -122,14 +124,22 @@ function ClaimsTab() {
                   <TableCell><PriorityBadge value={c.priority} /></TableCell>
                   <TableCell><StatusBadge value={c.status} /></TableCell>
                   <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => ws.openView({
-                      id: `view:reclamo.detail:${c.id}`,
-                      viewKey: "reclamo.detail",
-                      title: `Reclamo ${c.claim_number}`,
-                      iconKey: "wrench",
-                      parentModule: "reclamos",
-                      payload: { claimId: c.id },
-                    })}>Abrir</Button>
+                    <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="outline" onClick={() => ws.openView({
+                        id: `view:reclamo.detail:${c.id}`,
+                        viewKey: "reclamo.detail",
+                        title: `Reclamo ${c.claim_number}`,
+                        iconKey: "wrench",
+                        parentModule: "reclamos",
+                        payload: { claimId: c.id },
+                      })}>Abrir</Button>
+                      <DeleteButton
+                        iconOnly
+                        title={`¿Eliminar reclamo ${c.claim_number}?`}
+                        description="Se eliminarán también sus órdenes de trabajo y comentarios."
+                        onConfirm={() => del.mutate(c.id)}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -144,6 +154,7 @@ function ClaimsTab() {
 function CrewsTab() {
   const { data: crews = [], isLoading } = useCrews();
   const ws = useWorkspace();
+  const del = useDeleteCrew();
   return (
     <Card>
       <CardHeader>
@@ -171,14 +182,22 @@ function CrewsTab() {
                   <TableCell><Badge variant="outline">{c.specialty}</Badge></TableCell>
                   <TableCell><Badge variant={c.is_active ? "default" : "secondary"}>{c.is_active ? "Activa" : "Inactiva"}</Badge></TableCell>
                   <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => ws.openView({
-                      id: `view:cuadrilla.edit:${c.id}`,
-                      viewKey: "cuadrilla.edit",
-                      title: `Editar · ${c.name}`,
-                      iconKey: "wrench",
-                      parentModule: "reclamos",
-                      payload: { crew: c },
-                    })}>Editar</Button>
+                    <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="outline" onClick={() => ws.openView({
+                        id: `view:cuadrilla.edit:${c.id}`,
+                        viewKey: "cuadrilla.edit",
+                        title: `Editar · ${c.name}`,
+                        iconKey: "wrench",
+                        parentModule: "reclamos",
+                        payload: { crew: c },
+                      })}>Editar</Button>
+                      <DeleteButton
+                        iconOnly
+                        title={`¿Eliminar cuadrilla "${c.name}"?`}
+                        description="No se podrá eliminar si tiene órdenes de trabajo activas."
+                        onConfirm={() => del.mutate(c.id)}
+                      />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

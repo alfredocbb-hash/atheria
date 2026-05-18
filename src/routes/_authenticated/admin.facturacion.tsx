@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useInvoices, useReadings } from "@/hooks/use-billing";
+import { useInvoices, useReadings, useVoidInvoice, useDeleteReading } from "@/hooks/use-billing";
+import { DeleteButton } from "@/components/admin/delete-button";
 
 export const Route = createFileRoute("/_authenticated/admin/facturacion")({
   head: () => ({ meta: [{ title: "Facturación — Coopecur 2.0" }] }),
@@ -44,6 +45,7 @@ export function FacturacionPage() {
 function ReadingsTab() {
   const { data: readings = [], isLoading } = useReadings();
   const ws = useWorkspace();
+  const del = useDeleteReading();
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -57,10 +59,10 @@ function ReadingsTab() {
           <Table>
             <TableHeader><TableRow>
               <TableHead>Fecha</TableHead><TableHead>Suministro</TableHead><TableHead>Medidor</TableHead>
-              <TableHead className="text-right">Lectura</TableHead><TableHead className="text-right">Consumo</TableHead><TableHead>Origen</TableHead>
+              <TableHead className="text-right">Lectura</TableHead><TableHead className="text-right">Consumo</TableHead><TableHead>Origen</TableHead><TableHead></TableHead>
             </TableRow></TableHeader>
             <TableBody>
-              {readings.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-sm text-muted-foreground">Sin lecturas.</TableCell></TableRow>}
+              {readings.length === 0 && <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground">Sin lecturas.</TableCell></TableRow>}
               {readings.map((r: any) => (
                 <TableRow key={r.id}>
                   <TableCell>{r.reading_date}</TableCell>
@@ -69,6 +71,14 @@ function ReadingsTab() {
                   <TableCell className="text-right">{r.reading_value}</TableCell>
                   <TableCell className="text-right">{r.consumption ?? "—"}</TableCell>
                   <TableCell><Badge variant="outline">{r.source}</Badge></TableCell>
+                  <TableCell className="text-right">
+                    <DeleteButton
+                      iconOnly
+                      title="¿Eliminar esta lectura?"
+                      description="Se recalculará el consumo. No se podrá eliminar si la lectura fue usada en una factura."
+                      onConfirm={() => del.mutate(r.id)}
+                    />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -83,6 +93,7 @@ function InvoicesTab() {
   const [status, setStatus] = useState<string>("");
   const { data: invoices = [], isLoading } = useInvoices({ status: status || undefined });
   const ws = useWorkspace();
+  const voidInv = useVoidInvoice();
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
@@ -125,14 +136,25 @@ function InvoicesTab() {
                   <TableCell className="text-right">{fmtMoney(i.balance, i.currency)}</TableCell>
                   <TableCell><StatusBadge status={i.status} /></TableCell>
                   <TableCell>
-                    <Button variant="outline" size="sm" onClick={() => ws.openView({
-                      id: `view:factura.detail:${i.id}`,
-                      viewKey: "factura.detail",
-                      title: `Factura ${i.invoice_number}`,
-                      iconKey: "receipt",
-                      parentModule: "facturacion",
-                      payload: { invoiceId: i.id },
-                    })}>Ver</Button>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="outline" size="sm" onClick={() => ws.openView({
+                        id: `view:factura.detail:${i.id}`,
+                        viewKey: "factura.detail",
+                        title: `Factura ${i.invoice_number}`,
+                        iconKey: "receipt",
+                        parentModule: "facturacion",
+                        payload: { invoiceId: i.id },
+                      })}>Ver</Button>
+                      {i.status !== "void" && (
+                        <DeleteButton
+                          iconOnly
+                          label="Anular"
+                          title={`¿Anular factura ${i.invoice_number}?`}
+                          description="La factura quedará marcada como anulada. Se conservará el historial."
+                          onConfirm={() => voidInv.mutate(i.id)}
+                        />
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
