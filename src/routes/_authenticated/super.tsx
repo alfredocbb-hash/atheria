@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Activity, Building2, CreditCard, LayoutGrid, ListTree, Loader2, LogOut, Receipt } from "lucide-react";
+import { Activity, Building2, CreditCard, LayoutDashboard, LayoutGrid, ListTree, Loader2, LogOut, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsSuperAdmin } from "@/hooks/use-super-admin";
@@ -32,6 +32,7 @@ function SuperLayoutRoute() {
   if (!sa.data.isSuperAdmin) return null;
 
   const NAV = [
+    { label: "Dashboard", to: "/super", icon: LayoutDashboard },
     { label: "Tenants", to: "/super/tenants", icon: Building2 },
     { label: "Planes", to: "/super/planes", icon: LayoutGrid },
     { label: "Eventos", to: "/super/eventos", icon: ListTree },
