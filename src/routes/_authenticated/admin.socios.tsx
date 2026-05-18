@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEnsureTab, useWorkspace } from "@/components/workspace/workspace-context";
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Search, Users } from "lucide-react";
+import { Loader2, Pencil, Plus, Search, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -84,12 +84,29 @@ export function SociosPage() {
                         <Badge variant={m.status === "active" ? "default" : m.status === "suspended" ? "destructive" : "secondary"}>{m.status}</Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <DeleteButton
-                          iconOnly
-                          title={`¿Eliminar socio ${m.full_name}?`}
-                          description="Se eliminará el socio definitivamente. Si tiene suministros, facturas o reclamos, la operación será rechazada."
-                          onConfirm={() => del.mutate(m.id)}
-                        />
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Editar"
+                            onClick={() => ws.openView({
+                              id: `view:socio.edit:${m.id}`,
+                              viewKey: "socio.edit",
+                              title: `Editar · ${m.full_name}`,
+                              iconKey: "pencil",
+                              parentModule: "socios",
+                              payload: { member: m },
+                            })}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <DeleteButton
+                            iconOnly
+                            title={`¿Eliminar socio ${m.full_name}?`}
+                            description="Se eliminará el socio definitivamente. Si tiene suministros, facturas o reclamos, la operación será rechazada."
+                            onConfirm={() => del.mutate(m.id)}
+                          />
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
