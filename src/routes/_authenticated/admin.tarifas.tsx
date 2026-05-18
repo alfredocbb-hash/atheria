@@ -1,0 +1,115 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { Loader2, Plus } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useTariffs, useToggleTariff } from "@/hooks/use-billing";
+import { useEnsureTab, useWorkspace } from "@/components/workspace/workspace-context";
+
+export const Route = createFileRoute("/_authenticated/admin/tarifas")({
+  head: () => ({ meta: [{ title: "Tarifas — Coopecur 2.0" }] }),
+  component: TarifasPageTrigger,
+});
+
+const fmtMoney = (n: number, c = "ARS") =>
+  new Intl.NumberFormat("es-AR", { style: "currency", currency: c }).format(Number(n || 0));
+
+export function TarifasPage() {
+  const auth = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!auth.isLoading && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true });
+  }, [auth, navigate]);
+
+  const { data: tariffs = [], isLoading } = useTariffs();
+  const toggle = useToggleTariff();
+  const ws = useWorkspace();
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Operaciones</p>
+        <h1 className="text-2xl font-semibold tracking-tight">Tarifas</h1>
+        <p className="text-sm text-muted-foreground">Cuadros tarifarios vigentes por servicio.</p>
+      </div>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Tarifas vigentes</CardTitle>
+          <Button
+            size="sm"
+            onClick={() =>
+              ws.openView({
+                id: "view:tarifa.new",
+                viewKey: "tarifa.new",
+                title: "Nueva tarifa",
+                iconKey: "wallet",
+                parentModule: "tarifas",
+              })
+            }
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            Nueva tarifa
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Servicio</TableHead>
+                  <TableHead>Categoría</TableHead>
+                  <TableHead className="text-right">Cargo fijo</TableHead>
+                  <TableHead className="text-right">$/unidad</TableHead>
+                  <TableHead>Vigencia</TableHead>
+                  <TableHead>Activa</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tariffs.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
+                      Sin tarifas cargadas.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {tariffs.map((t: any) => (
+                  <TableRow key={t.id}>
+                    <TableCell className="font-medium">{t.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{t.service_type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{t.category ?? "—"}</TableCell>
+                    <TableCell className="text-right">{fmtMoney(t.fixed_charge, t.currency)}</TableCell>
+                    <TableCell className="text-right">{fmtMoney(t.unit_price, t.currency)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {t.valid_from}
+                      {t.valid_to ? ` → ${t.valid_to}` : ""}
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={t.is_active}
+                        onCheckedChange={(v) => toggle.mutate({ id: t.id, is_active: v })}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function TarifasPageTrigger() {
+  useEnsureTab("tarifas");
+  return null;
+}

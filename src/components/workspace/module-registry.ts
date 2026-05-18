@@ -6,6 +6,7 @@ import {
   Receipt,
   ShieldCheck,
   Users,
+  Wallet,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import { AdminUsersPage } from "@/routes/_authenticated/admin.usuarios";
 import { SociosPage } from "@/routes/_authenticated/admin.socios";
 import { SuministrosPage } from "@/routes/_authenticated/admin.suministros";
 import { FacturacionPage } from "@/routes/_authenticated/admin.facturacion";
+import { TarifasPage } from "@/routes/_authenticated/admin.tarifas";
 import { ReclamosPage } from "@/routes/_authenticated/admin.reclamos";
 import { AuditPage } from "@/routes/_authenticated/admin.auditoria";
 
@@ -24,6 +26,7 @@ export type ModuleKey =
   | "socios"
   | "suministros"
   | "facturacion"
+  | "tarifas"
   | "reclamos"
   | "auditoria";
 
@@ -75,6 +78,13 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDef> = {
     icon: Receipt,
     routeTo: "/admin/facturacion",
     Component: FacturacionPage,
+  },
+  tarifas: {
+    key: "tarifas",
+    title: "Tarifas",
+    icon: Wallet,
+    routeTo: "/admin/tarifas",
+    Component: TarifasPage,
   },
   reclamos: {
     key: "reclamos",

@@ -18,6 +18,7 @@ import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
+import { Route as AuthenticatedAdminTarifasRouteImport } from './routes/_authenticated/admin.tarifas'
 import { Route as AuthenticatedAdminSuministrosRouteImport } from './routes/_authenticated/admin.suministros'
 import { Route as AuthenticatedAdminSociosRouteImport } from './routes/_authenticated/admin.socios'
 import { Route as AuthenticatedAdminReclamosRouteImport } from './routes/_authenticated/admin.reclamos'
@@ -69,6 +70,12 @@ const AuthenticatedAdminUsuariosRoute =
     path: '/usuarios',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminTarifasRoute =
+  AuthenticatedAdminTarifasRouteImport.update({
+    id: '/tarifas',
+    path: '/tarifas',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminSuministrosRoute =
   AuthenticatedAdminSuministrosRouteImport.update({
     id: '/suministros',
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
+  '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -126,6 +134,7 @@ export interface FileRoutesByTo {
   '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
+  '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
@@ -143,6 +152,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
   '/_authenticated/admin/socios': typeof AuthenticatedAdminSociosRoute
   '/_authenticated/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
+  '/_authenticated/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/admin/reclamos'
     | '/admin/socios'
     | '/admin/suministros'
+    | '/admin/tarifas'
     | '/admin/usuarios'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/admin/reclamos'
     | '/admin/socios'
     | '/admin/suministros'
+    | '/admin/tarifas'
     | '/admin/usuarios'
     | '/admin'
   id:
@@ -190,6 +202,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/reclamos'
     | '/_authenticated/admin/socios'
     | '/_authenticated/admin/suministros'
+    | '/_authenticated/admin/tarifas'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminUsuariosRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/tarifas': {
+      id: '/_authenticated/admin/tarifas'
+      path: '/tarifas'
+      fullPath: '/admin/tarifas'
+      preLoaderRoute: typeof AuthenticatedAdminTarifasRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/suministros': {
       id: '/_authenticated/admin/suministros'
       path: '/suministros'
@@ -311,6 +331,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminReclamosRoute: typeof AuthenticatedAdminReclamosRoute
   AuthenticatedAdminSociosRoute: typeof AuthenticatedAdminSociosRoute
   AuthenticatedAdminSuministrosRoute: typeof AuthenticatedAdminSuministrosRoute
+  AuthenticatedAdminTarifasRoute: typeof AuthenticatedAdminTarifasRoute
   AuthenticatedAdminUsuariosRoute: typeof AuthenticatedAdminUsuariosRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
@@ -321,6 +342,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminReclamosRoute: AuthenticatedAdminReclamosRoute,
   AuthenticatedAdminSociosRoute: AuthenticatedAdminSociosRoute,
   AuthenticatedAdminSuministrosRoute: AuthenticatedAdminSuministrosRoute,
+  AuthenticatedAdminTarifasRoute: AuthenticatedAdminTarifasRoute,
   AuthenticatedAdminUsuariosRoute: AuthenticatedAdminUsuariosRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
