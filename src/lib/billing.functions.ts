@@ -2,17 +2,29 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function ensureStaff(supabase: any, userId: string) {
-  const [{ data: isAdmin }, { data: isOp }] = await Promise.all([
-    supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
-    supabase.rpc("has_role", { _user_id: userId, _role: "operator" }),
-  ]);
-  if (!isAdmin && !isOp) throw new Error("Forbidden: solo personal autorizado");
+async function getTenantId(supabase: any): Promise<string> {
+  const { data, error } = await supabase.rpc("current_tenant_id");
+  if (error) throw new Error(`Tenant: ${error.message}`);
+  if (!data) throw new Error("No tenés una cooperativa activa");
+  return data as string;
 }
-
-async function ensureAdmin(supabase: any, userId: string) {
-  const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (!isAdmin) throw new Error("Forbidden: requiere rol de administrador");
+async function ensureStaff(supabase: any, _userId: string): Promise<string> {
+  const tid = await getTenantId(supabase);
+  const [{ data: ok }, { data: sa }] = await Promise.all([
+    supabase.rpc("is_tenant_member", { _tenant: tid, _role: "staff" }),
+    supabase.rpc("is_super_admin"),
+  ]);
+  if (!ok && !sa) throw new Error("Forbidden: solo personal autorizado");
+  return tid;
+}
+async function ensureAdmin(supabase: any, _userId: string): Promise<string> {
+  const tid = await getTenantId(supabase);
+  const [{ data: ok }, { data: sa }] = await Promise.all([
+    supabase.rpc("is_tenant_member", { _tenant: tid, _role: "admin" }),
+    supabase.rpc("is_super_admin"),
+  ]);
+  if (!ok && !sa) throw new Error("Forbidden: requiere rol de administrador");
+  return tid;
 }
 
 // ---------- Tariffs ----------
@@ -43,11 +55,12 @@ export const createTariff = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => TariffInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await ensureStaff(supabase, userId);
+    const tenant_id = await ensureStaff(supabase, userId);
     const payload = {
       ...data,
       category: data.category || null,
       valid_to: data.valid_to || null,
+      tenant_id,
     };
     const { data: row, error } = await supabase.from("tariffs").insert(payload).select().single();
     if (error) throw new Error(error.message);
@@ -127,7 +140,7 @@ export const createReading = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => ReadingInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await ensureStaff(supabase, userId);
+    const tenant_id = await ensureStaff(supabase, userId);
     // get previous reading
     const { data: prev } = await supabase
       .from("meter_readings")
@@ -148,6 +161,7 @@ export const createReading = createServerFn({ method: "POST" })
         source: data.source,
         notes: data.notes || null,
         created_by: userId,
+        tenant_id,
       })
       .select()
       .single();
@@ -228,7 +242,7 @@ export const generateInvoice = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => GenerateInvoiceInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await ensureStaff(supabase, userId);
+    const tenant_id = await ensureStaff(supabase, userId);
 
     // Load supply
     const { data: supply, error: supErr } = await supabase
@@ -320,6 +334,7 @@ export const generateInvoice = createServerFn({ method: "POST" })
         reading_previous_id: prevReading?.id ?? null,
         reading_current_id: currentReading?.id ?? null,
         notes: data.notes || null,
+        tenant_id,
       })
       .select()
       .single();
@@ -333,6 +348,7 @@ export const generateInvoice = createServerFn({ method: "POST" })
         quantity: 1,
         unit_price: fixed,
         amount: fixed,
+        tenant_id,
       },
     ];
     if (consumption > 0 || currentReading) {
@@ -343,6 +359,7 @@ export const generateInvoice = createServerFn({ method: "POST" })
         quantity: consumption,
         unit_price: unitPrice,
         amount: consumptionAmount,
+        tenant_id,
       });
     }
     if (taxAmount > 0) {
@@ -353,6 +370,7 @@ export const generateInvoice = createServerFn({ method: "POST" })
         quantity: 1,
         unit_price: taxAmount,
         amount: taxAmount,
+        tenant_id,
       });
     }
     const { error: itErr } = await supabase.from("invoice_items").insert(items);
@@ -448,7 +466,7 @@ export const registerPayment = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => PaymentInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await ensureStaff(supabase, userId);
+    const tenant_id = await ensureStaff(supabase, userId);
     const { data: row, error } = await supabase
       .from("payments")
       .insert({
@@ -459,6 +477,7 @@ export const registerPayment = createServerFn({ method: "POST" })
         reference: data.reference || null,
         notes: data.notes || null,
         created_by: userId,
+        tenant_id,
       })
       .select()
       .single();
