@@ -158,13 +158,21 @@ function AuthGate() {
   }, []);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
+      if (!newSession) setRoles([]);
       // defer to avoid recursive deadlocks inside the listener
       setTimeout(() => {
         void loadRoles(newSession?.user?.id);
         router.invalidate();
-        queryClient.invalidateQueries();
+        if (event === "SIGNED_OUT" || !newSession) {
+          // Cancel + drop cached user-scoped queries so they don't refetch
+          // without a bearer token during the logout transition.
+          queryClient.cancelQueries();
+          queryClient.removeQueries();
+        } else {
+          queryClient.invalidateQueries();
+        }
       }, 0);
     });
 
