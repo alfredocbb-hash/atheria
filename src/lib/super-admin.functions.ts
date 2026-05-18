@@ -302,3 +302,153 @@ export const getPlatformHealth = createServerFn({ method: "GET" })
       mercadopagoWebhookConfigured: !!process.env.MP_WEBHOOK_SECRET,
     };
   });
+
+// ---------- Super Dashboard ----------
+export const getSuperDashboard = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context as any;
+    await assertSuper(supabase);
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86_400_000).toISOString();
+    const inThreeDays = new Date(Date.now() + 3 * 86_400_000).toISOString();
+    const inSevenDays = new Date(Date.now() + 7 * 86_400_000).toISOString();
+
+    const [
+      { data: tenants },
+      { data: events7d, count: events7dCount },
+      { data: recentEvents },
+      { data: recentAudit },
+      { data: atRiskTrials },
+      { data: atRiskPastDue },
+    ] = await Promise.all([
+      supabase
+        .from("tenants")
+        .select("id, name, status, trial_ends_at, plan_id, plans(price_cents, currency)"),
+      supabase
+        .from("subscription_events")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", sevenDaysAgo),
+      supabase
+        .from("subscription_events")
+        .select("id, type, provider, created_at, tenants(name)")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("audit_log")
+        .select("id, action, entity_type, actor_email, created_at, tenant_id")
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("tenants")
+        .select("id, name, status, trial_ends_at")
+        .eq("status", "trial")
+        .not("trial_ends_at", "is", null)
+        .lte("trial_ends_at", inThreeDays)
+        .order("trial_ends_at", { ascending: true })
+        .limit(20),
+      supabase
+        .from("tenants")
+        .select("id, name, status, trial_ends_at")
+        .in("status", ["past_due", "suspended"])
+        .limit(20),
+    ]);
+
+    const byStatus: Record<string, number> = {};
+    let mrrCents = 0;
+    let trialsEndingSoon = 0;
+    const now = Date.now();
+    const soon = now + 7 * 86_400_000;
+    for (const t of (tenants ?? []) as any[]) {
+      byStatus[t.status] = (byStatus[t.status] ?? 0) + 1;
+      if (t.status === "active" && t.plans?.price_cents) {
+        mrrCents += t.plans.price_cents;
+      }
+      if (
+        t.status === "trial" &&
+        t.trial_ends_at &&
+        new Date(t.trial_ends_at).getTime() <= soon &&
+        new Date(t.trial_ends_at).getTime() >= now
+      ) {
+        trialsEndingSoon += 1;
+      }
+    }
+
+    void events7d;
+    void inSevenDays;
+
+    return {
+      kpis: {
+        totalTenants: (tenants ?? []).length,
+        byStatus,
+        trialsEndingSoon,
+        mrrCents,
+        eventsLast7d: events7dCount ?? 0,
+      },
+      atRisk: [
+        ...((atRiskTrials ?? []) as any[]).map((t) => ({ ...t, reason: "trial_ending" as const })),
+        ...((atRiskPastDue ?? []) as any[]).map((t) => ({ ...t, reason: "billing" as const })),
+      ],
+      recentEvents: ((recentEvents ?? []) as any[]).map((e) => ({
+        ...e,
+        tenant_name: e.tenants?.name ?? null,
+      })),
+      recentAudit: recentAudit ?? [],
+    };
+  });
+
+// ---------- Per-tenant billing credentials (scaffolding) ----------
+export const getTenantBillingConfig = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ tenantId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context as any;
+    await assertSuper(supabase);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row } = await supabaseAdmin
+      .from("tenant_billing_credentials")
+      .select("tenant_id, provider, access_token, webhook_secret, preapproval_plan_id, updated_at")
+      .eq("tenant_id", data.tenantId)
+      .maybeSingle();
+    return {
+      provider: row?.provider ?? "mercadopago",
+      hasAccessToken: !!row?.access_token,
+      hasWebhookSecret: !!row?.webhook_secret,
+      preapprovalPlanId: row?.preapproval_plan_id ?? null,
+      updatedAt: row?.updated_at ?? null,
+    };
+  });
+
+const UpsertBillingSchema = z.object({
+  tenantId: z.string().uuid(),
+  provider: z.enum(["mercadopago"]).default("mercadopago"),
+  accessToken: z.string().max(500).nullable().optional(),
+  webhookSecret: z.string().max(500).nullable().optional(),
+  preapprovalPlanId: z.string().max(120).nullable().optional(),
+});
+
+export const upsertTenantBillingConfig = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => UpsertBillingSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await assertSuper(supabase);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const patch: Record<string, unknown> = {
+      tenant_id: data.tenantId,
+      provider: data.provider,
+      updated_by: userId,
+      updated_at: new Date().toISOString(),
+    };
+    if (data.accessToken !== undefined) patch.access_token = data.accessToken || null;
+    if (data.webhookSecret !== undefined) patch.webhook_secret = data.webhookSecret || null;
+    if (data.preapprovalPlanId !== undefined)
+      patch.preapproval_plan_id = data.preapprovalPlanId || null;
+
+    const { error } = await supabaseAdmin
+      .from("tenant_billing_credentials")
+      .upsert(patch as any, { onConflict: "tenant_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

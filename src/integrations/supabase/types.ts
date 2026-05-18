@@ -948,6 +948,44 @@ export type Database = {
           },
         ]
       }
+      tenant_billing_credentials: {
+        Row: {
+          access_token: string | null
+          preapproval_plan_id: string | null
+          provider: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+          webhook_secret: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          preapproval_plan_id?: string | null
+          provider?: string
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+          webhook_secret?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          preapproval_plan_id?: string | null
+          provider?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          webhook_secret?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_billing_credentials_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_members: {
         Row: {
           created_at: string
@@ -1157,6 +1195,17 @@ export type Database = {
           _link: string
           _member_id: string
           _metadata: Json
+          _title: string
+        }
+        Returns: undefined
+      }
+      notify_tenant_admins: {
+        Args: {
+          _body: string
+          _kind: string
+          _link: string
+          _metadata?: Json
+          _tenant: string
           _title: string
         }
         Returns: undefined

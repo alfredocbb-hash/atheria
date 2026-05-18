@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import {
   amISuperAdmin,
   createTenant,
+  getSuperDashboard,
+  getTenantBillingConfig,
   getPlatformHealth,
   listPlansAdmin,
   listSubscriptionEvents,
@@ -12,6 +14,7 @@ import {
   togglePlanActive,
   updateTenant,
   upsertPlan,
+  upsertTenantBillingConfig,
 } from "@/lib/super-admin.functions";
 
 type UpdateTenantInput = {
@@ -138,4 +141,37 @@ export function useSubscriptionEvents(filters: {
 export function usePlatformHealth() {
   const fn = useServerFn(getPlatformHealth);
   return useQuery({ queryKey: ["super", "health"], queryFn: () => fn({}) });
+}
+
+export function useSuperDashboard() {
+  const fn = useServerFn(getSuperDashboard);
+  return useQuery({ queryKey: ["super", "dashboard"], queryFn: () => fn({}) });
+}
+
+export function useTenantBillingConfig(tenantId: string | null) {
+  const fn = useServerFn(getTenantBillingConfig);
+  return useQuery({
+    queryKey: ["super", "tenant-billing", tenantId],
+    queryFn: () => fn({ data: { tenantId: tenantId! } }),
+    enabled: !!tenantId,
+  });
+}
+
+export function useUpsertTenantBillingConfig() {
+  const fn = useServerFn(upsertTenantBillingConfig);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      tenantId: string;
+      provider?: "mercadopago";
+      accessToken?: string | null;
+      webhookSecret?: string | null;
+      preapprovalPlanId?: string | null;
+    }) => fn({ data: { provider: "mercadopago", ...data } }),
+    onSuccess: (_r, vars) => {
+      qc.invalidateQueries({ queryKey: ["super", "tenant-billing", vars.tenantId] });
+      toast.success("Credenciales guardadas");
+    },
+    onError: (e: Error) => toast.error("Error", { description: e.message }),
+  });
 }

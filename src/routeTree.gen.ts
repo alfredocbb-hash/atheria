@@ -15,12 +15,15 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSuperRouteImport } from './routes/_authenticated/super'
+import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated/cliente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedSuperIndexRouteImport } from './routes/_authenticated/super.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedSuperTenantsRouteImport } from './routes/_authenticated/super.tenants'
 import { Route as AuthenticatedSuperPlanesRouteImport } from './routes/_authenticated/super.planes'
 import { Route as AuthenticatedSuperHealthRouteImport } from './routes/_authenticated/super.health'
+import { Route as AuthenticatedSuperFacturacionRouteImport } from './routes/_authenticated/super.facturacion'
 import { Route as AuthenticatedSuperEventosRouteImport } from './routes/_authenticated/super.eventos'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminTarifasRouteImport } from './routes/_authenticated/admin.tarifas'
@@ -61,6 +64,11 @@ const AuthenticatedSuperRoute = AuthenticatedSuperRouteImport.update({
   path: '/super',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedClienteRoute = AuthenticatedClienteRouteImport.update({
   id: '/cliente',
   path: '/cliente',
@@ -70,6 +78,11 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSuperIndexRoute = AuthenticatedSuperIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedSuperRoute,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
@@ -92,6 +105,12 @@ const AuthenticatedSuperHealthRoute =
   AuthenticatedSuperHealthRouteImport.update({
     id: '/health',
     path: '/health',
+    getParentRoute: () => AuthenticatedSuperRoute,
+  } as any)
+const AuthenticatedSuperFacturacionRoute =
+  AuthenticatedSuperFacturacionRouteImport.update({
+    id: '/facturacion',
+    path: '/facturacion',
     getParentRoute: () => AuthenticatedSuperRoute,
   } as any)
 const AuthenticatedSuperEventosRoute =
@@ -162,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/super': typeof AuthenticatedSuperRouteWithChildren
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
@@ -172,10 +192,12 @@ export interface FileRoutesByFullPath {
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/super/facturacion': typeof AuthenticatedSuperFacturacionRoute
   '/super/health': typeof AuthenticatedSuperHealthRoute
   '/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/super/': typeof AuthenticatedSuperIndexRoute
   '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
 }
 export interface FileRoutesByTo {
@@ -184,7 +206,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/cliente': typeof AuthenticatedClienteRoute
-  '/super': typeof AuthenticatedSuperRouteWithChildren
+  '/onboarding': typeof AuthenticatedOnboardingRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
@@ -194,10 +216,12 @@ export interface FileRoutesByTo {
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/super/facturacion': typeof AuthenticatedSuperFacturacionRoute
   '/super/health': typeof AuthenticatedSuperHealthRoute
   '/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/super': typeof AuthenticatedSuperIndexRoute
   '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
 }
 export interface FileRoutesById {
@@ -209,6 +233,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
+  '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/super': typeof AuthenticatedSuperRouteWithChildren
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
@@ -219,10 +244,12 @@ export interface FileRoutesById {
   '/_authenticated/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
   '/_authenticated/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/_authenticated/super/facturacion': typeof AuthenticatedSuperFacturacionRoute
   '/_authenticated/super/health': typeof AuthenticatedSuperHealthRoute
   '/_authenticated/super/planes': typeof AuthenticatedSuperPlanesRoute
   '/_authenticated/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/super/': typeof AuthenticatedSuperIndexRoute
   '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
 }
 export interface FileRouteTypes {
@@ -234,6 +261,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/cliente'
+    | '/onboarding'
     | '/super'
     | '/admin/auditoria'
     | '/admin/facturacion'
@@ -244,10 +272,12 @@ export interface FileRouteTypes {
     | '/admin/tarifas'
     | '/admin/usuarios'
     | '/super/eventos'
+    | '/super/facturacion'
     | '/super/health'
     | '/super/planes'
     | '/super/tenants'
     | '/admin/'
+    | '/super/'
     | '/api/public/billing-webhook/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -256,7 +286,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/cliente'
-    | '/super'
+    | '/onboarding'
     | '/admin/auditoria'
     | '/admin/facturacion'
     | '/admin/facturacion-suscripcion'
@@ -266,10 +296,12 @@ export interface FileRouteTypes {
     | '/admin/tarifas'
     | '/admin/usuarios'
     | '/super/eventos'
+    | '/super/facturacion'
     | '/super/health'
     | '/super/planes'
     | '/super/tenants'
     | '/admin'
+    | '/super'
     | '/api/public/billing-webhook/$provider'
   id:
     | '__root__'
@@ -280,6 +312,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/cliente'
+    | '/_authenticated/onboarding'
     | '/_authenticated/super'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/facturacion'
@@ -290,10 +323,12 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/tarifas'
     | '/_authenticated/admin/usuarios'
     | '/_authenticated/super/eventos'
+    | '/_authenticated/super/facturacion'
     | '/_authenticated/super/health'
     | '/_authenticated/super/planes'
     | '/_authenticated/super/tenants'
     | '/_authenticated/admin/'
+    | '/_authenticated/super/'
     | '/api/public/billing-webhook/$provider'
   fileRoutesById: FileRoutesById
 }
@@ -350,6 +385,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSuperRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/onboarding': {
+      id: '/_authenticated/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/cliente': {
       id: '/_authenticated/cliente'
       path: '/cliente'
@@ -363,6 +405,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin'
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/super/': {
+      id: '/_authenticated/super/'
+      path: '/'
+      fullPath: '/super/'
+      preLoaderRoute: typeof AuthenticatedSuperIndexRouteImport
+      parentRoute: typeof AuthenticatedSuperRoute
     }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
@@ -390,6 +439,13 @@ declare module '@tanstack/react-router' {
       path: '/health'
       fullPath: '/super/health'
       preLoaderRoute: typeof AuthenticatedSuperHealthRouteImport
+      parentRoute: typeof AuthenticatedSuperRoute
+    }
+    '/_authenticated/super/facturacion': {
+      id: '/_authenticated/super/facturacion'
+      path: '/facturacion'
+      fullPath: '/super/facturacion'
+      preLoaderRoute: typeof AuthenticatedSuperFacturacionRouteImport
       parentRoute: typeof AuthenticatedSuperRoute
     }
     '/_authenticated/super/eventos': {
@@ -495,16 +551,20 @@ const AuthenticatedAdminRouteWithChildren =
 
 interface AuthenticatedSuperRouteChildren {
   AuthenticatedSuperEventosRoute: typeof AuthenticatedSuperEventosRoute
+  AuthenticatedSuperFacturacionRoute: typeof AuthenticatedSuperFacturacionRoute
   AuthenticatedSuperHealthRoute: typeof AuthenticatedSuperHealthRoute
   AuthenticatedSuperPlanesRoute: typeof AuthenticatedSuperPlanesRoute
   AuthenticatedSuperTenantsRoute: typeof AuthenticatedSuperTenantsRoute
+  AuthenticatedSuperIndexRoute: typeof AuthenticatedSuperIndexRoute
 }
 
 const AuthenticatedSuperRouteChildren: AuthenticatedSuperRouteChildren = {
   AuthenticatedSuperEventosRoute: AuthenticatedSuperEventosRoute,
+  AuthenticatedSuperFacturacionRoute: AuthenticatedSuperFacturacionRoute,
   AuthenticatedSuperHealthRoute: AuthenticatedSuperHealthRoute,
   AuthenticatedSuperPlanesRoute: AuthenticatedSuperPlanesRoute,
   AuthenticatedSuperTenantsRoute: AuthenticatedSuperTenantsRoute,
+  AuthenticatedSuperIndexRoute: AuthenticatedSuperIndexRoute,
 }
 
 const AuthenticatedSuperRouteWithChildren =
@@ -513,12 +573,14 @@ const AuthenticatedSuperRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
+  AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedSuperRoute: typeof AuthenticatedSuperRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedClienteRoute: AuthenticatedClienteRoute,
+  AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedSuperRoute: AuthenticatedSuperRouteWithChildren,
 }
 
