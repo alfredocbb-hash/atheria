@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEnsureTab, useWorkspace } from "@/components/workspace/workspace-context";
 import { useEffect, useState } from "react";
-import { Loader2, Pencil, Plus, Search, Users } from "lucide-react";
+import { Loader2, Pencil, Plus, Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
