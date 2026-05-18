@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FuncionalidadesRouteImport } from './routes/funcionalidades'
+import { Route as CasosRouteImport } from './routes/casos'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedSuperRouteImport } from './routes/_authenticated/super'
@@ -54,6 +55,11 @@ const LoginRoute = LoginRouteImport.update({
 const FuncionalidadesRoute = FuncionalidadesRouteImport.update({
   id: '/funcionalidades',
   path: '/funcionalidades',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CasosRoute = CasosRouteImport.update({
+  id: '/casos',
+  path: '/casos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -182,6 +188,7 @@ const ApiPublicBillingWebhookProviderRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/casos': typeof CasosRoute
   '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -209,6 +216,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/casos': typeof CasosRoute
   '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -236,6 +244,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/casos': typeof CasosRoute
   '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
@@ -265,6 +274,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/casos'
     | '/funcionalidades'
     | '/login'
     | '/register'
@@ -292,6 +302,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/casos'
     | '/funcionalidades'
     | '/login'
     | '/register'
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/casos'
     | '/funcionalidades'
     | '/login'
     | '/register'
@@ -347,6 +359,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  CasosRoute: typeof CasosRoute
   FuncionalidadesRoute: typeof FuncionalidadesRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
@@ -382,6 +395,13 @@ declare module '@tanstack/react-router' {
       path: '/funcionalidades'
       fullPath: '/funcionalidades'
       preLoaderRoute: typeof FuncionalidadesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/casos': {
+      id: '/casos'
+      path: '/casos'
+      fullPath: '/casos'
+      preLoaderRoute: typeof CasosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -611,6 +631,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  CasosRoute: CasosRoute,
   FuncionalidadesRoute: FuncionalidadesRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
@@ -620,3 +641,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
