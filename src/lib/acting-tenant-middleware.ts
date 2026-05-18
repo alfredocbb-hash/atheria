@@ -45,7 +45,7 @@ export const withActingTenant = createMiddleware({ type: "function" }).server(
       },
     });
 
-    const merged = { ...(context as object), supabase };
+    const merged = { ...(context as unknown as object), supabase };
     return next({ context: merged }) as never;
   },
 );
