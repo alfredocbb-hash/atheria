@@ -6,6 +6,7 @@ import {
   Receipt,
   ShieldCheck,
   Users,
+  Wallet,
   Wrench,
   type LucideIcon,
 } from "lucide-react";
