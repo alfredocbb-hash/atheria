@@ -14,9 +14,14 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedSuperRouteImport } from './routes/_authenticated/super'
 import { Route as AuthenticatedClienteRouteImport } from './routes/_authenticated/cliente'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedSuperTenantsRouteImport } from './routes/_authenticated/super.tenants'
+import { Route as AuthenticatedSuperPlanesRouteImport } from './routes/_authenticated/super.planes'
+import { Route as AuthenticatedSuperHealthRouteImport } from './routes/_authenticated/super.health'
+import { Route as AuthenticatedSuperEventosRouteImport } from './routes/_authenticated/super.eventos'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminTarifasRouteImport } from './routes/_authenticated/admin.tarifas'
 import { Route as AuthenticatedAdminSuministrosRouteImport } from './routes/_authenticated/admin.suministros'
@@ -51,6 +56,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedSuperRoute = AuthenticatedSuperRouteImport.update({
+  id: '/super',
+  path: '/super',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedClienteRoute = AuthenticatedClienteRouteImport.update({
   id: '/cliente',
   path: '/cliente',
@@ -66,6 +76,30 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedSuperTenantsRoute =
+  AuthenticatedSuperTenantsRouteImport.update({
+    id: '/tenants',
+    path: '/tenants',
+    getParentRoute: () => AuthenticatedSuperRoute,
+  } as any)
+const AuthenticatedSuperPlanesRoute =
+  AuthenticatedSuperPlanesRouteImport.update({
+    id: '/planes',
+    path: '/planes',
+    getParentRoute: () => AuthenticatedSuperRoute,
+  } as any)
+const AuthenticatedSuperHealthRoute =
+  AuthenticatedSuperHealthRouteImport.update({
+    id: '/health',
+    path: '/health',
+    getParentRoute: () => AuthenticatedSuperRoute,
+  } as any)
+const AuthenticatedSuperEventosRoute =
+  AuthenticatedSuperEventosRouteImport.update({
+    id: '/eventos',
+    path: '/eventos',
+    getParentRoute: () => AuthenticatedSuperRoute,
+  } as any)
 const AuthenticatedAdminUsuariosRoute =
   AuthenticatedAdminUsuariosRouteImport.update({
     id: '/usuarios',
@@ -128,6 +162,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/cliente': typeof AuthenticatedClienteRoute
+  '/super': typeof AuthenticatedSuperRouteWithChildren
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
@@ -136,6 +171,10 @@ export interface FileRoutesByFullPath {
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/super/health': typeof AuthenticatedSuperHealthRoute
+  '/super/planes': typeof AuthenticatedSuperPlanesRoute
+  '/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
 }
@@ -145,6 +184,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/cliente': typeof AuthenticatedClienteRoute
+  '/super': typeof AuthenticatedSuperRouteWithChildren
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
@@ -153,6 +193,10 @@ export interface FileRoutesByTo {
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/super/health': typeof AuthenticatedSuperHealthRoute
+  '/super/planes': typeof AuthenticatedSuperPlanesRoute
+  '/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
 }
@@ -165,6 +209,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/cliente': typeof AuthenticatedClienteRoute
+  '/_authenticated/super': typeof AuthenticatedSuperRouteWithChildren
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
   '/_authenticated/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/_authenticated/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
@@ -173,6 +218,10 @@ export interface FileRoutesById {
   '/_authenticated/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/_authenticated/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/_authenticated/super/eventos': typeof AuthenticatedSuperEventosRoute
+  '/_authenticated/super/health': typeof AuthenticatedSuperHealthRoute
+  '/_authenticated/super/planes': typeof AuthenticatedSuperPlanesRoute
+  '/_authenticated/super/tenants': typeof AuthenticatedSuperTenantsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/billing-webhook/$provider': typeof ApiPublicBillingWebhookProviderRoute
 }
@@ -185,6 +234,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/admin'
     | '/cliente'
+    | '/super'
     | '/admin/auditoria'
     | '/admin/facturacion'
     | '/admin/facturacion-suscripcion'
@@ -193,6 +243,10 @@ export interface FileRouteTypes {
     | '/admin/suministros'
     | '/admin/tarifas'
     | '/admin/usuarios'
+    | '/super/eventos'
+    | '/super/health'
+    | '/super/planes'
+    | '/super/tenants'
     | '/admin/'
     | '/api/public/billing-webhook/$provider'
   fileRoutesByTo: FileRoutesByTo
@@ -202,6 +256,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/cliente'
+    | '/super'
     | '/admin/auditoria'
     | '/admin/facturacion'
     | '/admin/facturacion-suscripcion'
@@ -210,6 +265,10 @@ export interface FileRouteTypes {
     | '/admin/suministros'
     | '/admin/tarifas'
     | '/admin/usuarios'
+    | '/super/eventos'
+    | '/super/health'
+    | '/super/planes'
+    | '/super/tenants'
     | '/admin'
     | '/api/public/billing-webhook/$provider'
   id:
@@ -221,6 +280,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/cliente'
+    | '/_authenticated/super'
     | '/_authenticated/admin/auditoria'
     | '/_authenticated/admin/facturacion'
     | '/_authenticated/admin/facturacion-suscripcion'
@@ -229,6 +289,10 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/suministros'
     | '/_authenticated/admin/tarifas'
     | '/_authenticated/admin/usuarios'
+    | '/_authenticated/super/eventos'
+    | '/_authenticated/super/health'
+    | '/_authenticated/super/planes'
+    | '/_authenticated/super/tenants'
     | '/_authenticated/admin/'
     | '/api/public/billing-webhook/$provider'
   fileRoutesById: FileRoutesById
@@ -279,6 +343,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/super': {
+      id: '/_authenticated/super'
+      path: '/super'
+      fullPath: '/super'
+      preLoaderRoute: typeof AuthenticatedSuperRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/cliente': {
       id: '/_authenticated/cliente'
       path: '/cliente'
@@ -299,6 +370,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/super/tenants': {
+      id: '/_authenticated/super/tenants'
+      path: '/tenants'
+      fullPath: '/super/tenants'
+      preLoaderRoute: typeof AuthenticatedSuperTenantsRouteImport
+      parentRoute: typeof AuthenticatedSuperRoute
+    }
+    '/_authenticated/super/planes': {
+      id: '/_authenticated/super/planes'
+      path: '/planes'
+      fullPath: '/super/planes'
+      preLoaderRoute: typeof AuthenticatedSuperPlanesRouteImport
+      parentRoute: typeof AuthenticatedSuperRoute
+    }
+    '/_authenticated/super/health': {
+      id: '/_authenticated/super/health'
+      path: '/health'
+      fullPath: '/super/health'
+      preLoaderRoute: typeof AuthenticatedSuperHealthRouteImport
+      parentRoute: typeof AuthenticatedSuperRoute
+    }
+    '/_authenticated/super/eventos': {
+      id: '/_authenticated/super/eventos'
+      path: '/eventos'
+      fullPath: '/super/eventos'
+      preLoaderRoute: typeof AuthenticatedSuperEventosRouteImport
+      parentRoute: typeof AuthenticatedSuperRoute
     }
     '/_authenticated/admin/usuarios': {
       id: '/_authenticated/admin/usuarios'
@@ -394,14 +493,33 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
+interface AuthenticatedSuperRouteChildren {
+  AuthenticatedSuperEventosRoute: typeof AuthenticatedSuperEventosRoute
+  AuthenticatedSuperHealthRoute: typeof AuthenticatedSuperHealthRoute
+  AuthenticatedSuperPlanesRoute: typeof AuthenticatedSuperPlanesRoute
+  AuthenticatedSuperTenantsRoute: typeof AuthenticatedSuperTenantsRoute
+}
+
+const AuthenticatedSuperRouteChildren: AuthenticatedSuperRouteChildren = {
+  AuthenticatedSuperEventosRoute: AuthenticatedSuperEventosRoute,
+  AuthenticatedSuperHealthRoute: AuthenticatedSuperHealthRoute,
+  AuthenticatedSuperPlanesRoute: AuthenticatedSuperPlanesRoute,
+  AuthenticatedSuperTenantsRoute: AuthenticatedSuperTenantsRoute,
+}
+
+const AuthenticatedSuperRouteWithChildren =
+  AuthenticatedSuperRoute._addFileChildren(AuthenticatedSuperRouteChildren)
+
 interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedClienteRoute: typeof AuthenticatedClienteRoute
+  AuthenticatedSuperRoute: typeof AuthenticatedSuperRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedClienteRoute: AuthenticatedClienteRoute,
+  AuthenticatedSuperRoute: AuthenticatedSuperRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

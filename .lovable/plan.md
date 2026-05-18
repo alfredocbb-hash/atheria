@@ -1,45 +1,56 @@
-# Fase 2 — Estructura de billing sin credenciales MP
+## Fase 3 — Panel Super Admin
 
-Migración A+B ya aplicadas (super_admin sin tenant, tablas billing agnósticas, 3 planes vacíos). Ahora dejamos toda la **estructura de pagos lista** sin pedir credenciales todavía. Cuando tengas `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET`, basta con cargarlas para activar el flujo real.
+Hasta ahora tenemos: multitenancy, super_admin global (alfredocbb@gmail.com), tenants con estado de trial/billing, planes vacíos y la estructura de Mercado Pago lista (sin credenciales). Falta una **consola para que el super_admin gestione la plataforma** sin tocar SQL.
 
 ## Qué se construye
 
-### 1. Capa abstracta `src/lib/billing/`
-- `provider.ts` — interface `BillingProvider` (`createCheckout`, `cancelSubscription`, `verifyWebhook`, `mapEvent`).
-- `mercadopago.ts` — implementación contra MP Pre-approval. Si `MP_ACCESS_TOKEN` no está definido, todas las llamadas lanzan `Error("MP_ACCESS_TOKEN not configured")` con mensaje claro.
-- `index.ts` — `getBillingProvider(tenant)` switch por `tenant.billing_provider` (hoy siempre MP).
+### 1. Layout y guardas
+- Nueva ruta layout `src/routes/_authenticated/super.tsx` que valida `auth.isSuperAdmin` (hook nuevo `useIsSuperAdmin` que consulta `super_admins`) y redirige a `/` si no lo es.
+- Sidebar propio "Plataforma" con: Tenants, Planes, Eventos de facturación, Health.
+- Entrada al panel desde el avatar del admin layout, visible solo si `is_super_admin`.
 
-### 2. Server functions `src/lib/billing-saas.functions.ts`
-- `getCurrentSubscription()` — funciona ya (lee `tenants` + último `subscription_events`). No requiere credenciales.
-- `createCheckoutSession({planId})` — implementada pero lanza error explicativo si falta el secret.
-- `cancelSubscription()` — idem.
+### 2. Tenants — `super/tenants`
+- Listado: nombre, slug, plan, status, `trial_ends_at`, último evento, miembros count.
+- Acciones por fila:
+  - Editar nombre / slug / plan_id / status (`trial|active|past_due|suspended|cancelled`) / `trial_ends_at` / `billing_provider`.
+  - Ver miembros (drawer) con email y rol.
+  - "Impersonar tenant" (setear `localStorage` `current_tenant_id` y abrir `/admin` en nueva pestaña — super_admin ya pasa las RLS).
+- Crear nuevo tenant (nombre + slug + plan + admin inicial por email — si el usuario existe se agrega como `tenant_members.admin`, si no, se invita).
 
-### 3. Webhook público `src/routes/api/public/billing-webhook.$provider.ts`
-- Endpoint listo. Verifica firma con `MP_WEBHOOK_SECRET`; si el secret no está, responde 503 "billing not configured".
-- Idempotencia por `subscription_events.provider_event_id`.
-- Actualiza `tenants.status / plan_id / billing_subscription_id`.
+### 3. Planes — `super/planes`
+- Editor de la tabla `plans`: code, name, description, price_cents, currency, features (JSON editor simple key=value), limits (idem), `is_active`, `mp_preapproval_plan_id`, `provider_price_id`.
+- Botón "Activar" / "Desactivar".
+- Vista previa de cómo lo ve el tenant.
 
-### 4. UI mínima de suscripción
-- `/admin/facturacion-suscripcion` (solo admin del tenant): muestra plan actual, estado y `trial_ends_at`. CTA "Suscribirme" deshabilitada con tooltip "Pagos pendientes de activación" mientras no haya `MP_ACCESS_TOKEN`.
-- Banner global de trial countdown + pantalla de bloqueo cuando `status in ('suspended','cancelled')` — ya activo independiente de MP.
+### 4. Eventos de billing — `super/eventos`
+- Tabla `subscription_events` paginada: fecha, provider, tenant, type, `provider_event_id`, payload (expandible).
+- Filtros por tenant y por type. Útil para debuggear webhooks de MP cuando se activen.
 
-### 5. README breve en `src/lib/billing/README.md`
-Pasos para activar:
-1. Crear app en Mercado Pago → copiar Access Token.
-2. Configurar webhook MP → copiar Secret.
-3. Cargar `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET` como secrets en Lovable Cloud.
-4. Crear `preapproval_plan` por cada plan y pegar el id en `plans.mp_preapproval_plan_id` desde el panel super_admin (Fase 3).
+### 5. Health — `super/health`
+- Tarjetas: # tenants por status, # trials por vencer en 7d, MP configurado (sí/no según server fn que chequea `MP_ACCESS_TOKEN` sin exponerlo), último evento recibido.
 
-## Fuera de alcance ahora
-- Llamadas reales a la API de MP (quedan en código pero inactivas sin token).
-- Panel super_admin para editar planes (Fase 3).
-- Stripe.
+### 6. Server functions (`src/lib/super-admin.functions.ts`)
+Todas con middleware `requireSupabaseAuth` + guard server-side `is_super_admin()`:
+- `listTenants`, `getTenant`, `updateTenant`, `createTenant`, `listTenantMembers`, `addTenantMember`, `removeTenantMember`.
+- `listPlans` (full), `upsertPlan`, `togglePlanActive`.
+- `listSubscriptionEvents({tenantId?, type?, cursor})`.
+- `getPlatformHealth()` — agregados + `billingConfigured: !!process.env.MP_ACCESS_TOKEN`.
 
-## Orden
-1. `src/lib/billing/provider.ts` + `mercadopago.ts` + `index.ts`.
-2. `src/lib/billing-saas.functions.ts`.
-3. `src/routes/api/public/billing-webhook.$provider.ts`.
-4. UI `/admin/facturacion-suscripcion` + banner de trial + pantalla de bloqueo.
-5. README.
+### 7. Migración SQL
+- Función `public.is_super_admin_for(uuid)` ya existe (`is_super_admin()`). Sin cambios de schema, salvo:
+  - Permitir que super_admin escriba `plans` y `tenants` — ya cubierto por policies existentes.
+  - Agregar índice `subscription_events(tenant_id, created_at desc)` para el listado.
+
+## Fuera de alcance
+- Edición de roles dentro de un tenant (sigue en `/admin/usuarios` del tenant).
+- Cobros manuales / refunds (cuando se active MP).
+- Métricas históricas (Fase 4).
+
+## Orden de implementación
+1. Migración (índice + verificar policies super_admin sobre `plans`/`tenants`).
+2. `src/lib/super-admin.functions.ts` + hooks.
+3. Layout `super.tsx` + sidebar + guard.
+4. Páginas: tenants → planes → eventos → health.
+5. Entrada en el avatar admin.
 
 ¿Avanzo así?
