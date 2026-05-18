@@ -110,7 +110,7 @@ export const createMyTenant = createServerFn({ method: "POST" })
       _tenant: t.id,
       _kind: "billing",
       _title: "Bienvenido a la plataforma",
-      _body: `Tu período de prueba para ${t.name} vence el ${new Date(t.trial_ends_at).toLocaleDateString("es-AR")}.`,
+      _body: `Tu período de prueba para ${t.name} vence el ${new Date(t.trial_ends_at ?? Date.now()).toLocaleDateString("es-AR")}.`,
       _link: "/admin/facturacion-suscripcion",
       _metadata: {},
     });
