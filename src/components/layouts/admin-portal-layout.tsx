@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Building2, CreditCard, FileText, Gauge, LayoutDashboard, LogOut, Receipt, ShieldCheck, Users, Wallet, Wrench } from "lucide-react";
+import { Building2, CreditCard, FileText, Gauge, LayoutDashboard, LogOut, Receipt, Server, ShieldCheck, Users, Wallet, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -8,9 +8,11 @@ import { WorkspaceProvider } from "@/components/workspace/workspace-context";
 import { WorkspaceTabsBar } from "@/components/workspace/workspace-tabs-bar";
 import { WorkspacePanels } from "@/components/workspace/workspace-panels";
 import { SubscriptionGate, SubscriptionGuard } from "@/components/billing/subscription-gate";
+import { useIsSuperAdmin } from "@/hooks/use-super-admin";
 
 export function AdminPortalLayout({ children }: { children?: React.ReactNode }) {
   const auth = useAuth();
+  const sa = useIsSuperAdmin();
   const NAV: Array<{ label: string; icon: any; to?: string; enabled: boolean; adminOnly?: boolean }> = [
     { label: "Dashboard", icon: LayoutDashboard, to: "/admin", enabled: true },
     { label: "Usuarios y Roles", icon: ShieldCheck, to: "/admin/usuarios", enabled: true, adminOnly: true },
@@ -72,6 +74,14 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
             <span className="text-sm font-bold">Coopecur 2.0</span>
           </Link>
           <div className="flex items-center gap-1">
+            {sa.data?.isSuperAdmin && (
+              <Link
+                to="/super/tenants"
+                className="mr-2 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-secondary"
+              >
+                <Server className="h-3.5 w-3.5" /> Plataforma
+              </Link>
+            )}
             <NotificationsBell />
             <Button variant="ghost" size="sm" className="md:hidden" onClick={() => auth.signOut()}><LogOut className="h-4 w-4" /></Button>
           </div>
