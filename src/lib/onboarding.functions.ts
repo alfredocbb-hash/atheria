@@ -117,5 +117,5 @@ export const createMyTenant = createServerFn({ method: "POST" })
       _metadata: {},
     });
 
-    return { id: t.id, slug: data.slug };
+    return { ok: true as const, id: t.id, slug: data.slug };
   });
