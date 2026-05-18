@@ -1,135 +1,94 @@
-# Sistema de Gestión de Servicios — Multitenant + Suscripciones
+# Ajustes y Fase 2 — Pagos
 
-Renombrar el proyecto a **Sistema de Gestión de Servicios** (SGS) y convertirlo en SaaS multitenant. **Coopecur Connect** pasa a ser el primer tenant (semilla) dentro de la plataforma. Panel de **super_admin** global, suscripciones vía Stripe gestionado por Lovable, trial de 14 días al alta.
+## A. Ajuste super_admin (corrige Fase 1)
 
----
+`alfredocbb@gmail.com` queda **solo como super_admin global**, sin pertenecer a ningún tenant.
 
-## 0. Rebranding (plataforma)
+- Migración corta:
+  - `DELETE FROM tenant_members WHERE user_id = <uid de alfredocbb>;`
+  - Confirmar que sigue en `super_admins`.
+- Coopecur Connect queda como tenant semilla **sin admin asignado**. Cuando se necesite operar dentro de él, el super_admin:
+  - lo administra desde el panel `/super/*`, o
+  - se autoasigna `admin` puntualmente vía panel (impersonación / "agregar miembro").
+- `current_tenant_id()` para el super_admin devolverá `NULL` (no tiene membresías). Las queries del super_admin van por la rama `is_super_admin()` de las RLS — ya está cubierto.
 
-- Nombre de producto: **Sistema de Gestión de Servicios**.
-- Cambios cosméticos: `index.html` `<title>`, layouts (`client-portal-layout`, `admin-portal-layout`), landing `src/routes/index.tsx`, emails de auth, `head()` meta de cada ruta.
-- **Coopecur 2.0 / Coopecur Connect** deja de ser el nombre de la app y pasa a ser el `name` del tenant semilla en la tabla `tenants`. Su logo/identidad se muestran solo cuando ese tenant está activo (base para white-label futuro).
-- No se renombra el repo ni el Lovable project ID — solo strings visibles.
+Impacto en UI (a tener en cuenta en fases siguientes):
+- Si `isSuperAdmin && tenants.length === 0` → entra directo al panel `/super`, no al portal admin del tenant.
+- El selector de tenant del super_admin lista **todos** los tenants (no solo los suyos).
 
----
+## B. Fase 2 — Pagos con Mercado Pago (estructura provider-agnostic)
 
-## 1. Modelo de datos (migración única)
+Objetivo: implementar **solo Mercado Pago** ahora, pero dejar la capa de billing abstracta para sumar Stripe u otros después sin reescribir.
 
-### Tablas nuevas
+### 1. Modelo de datos (migración)
 
-- **`tenants`** — una fila por cooperativa/cliente del SaaS.
-  - `id`, `name`, `slug` (único), `status` (`trial` | `active` | `past_due` | `suspended` | `cancelled`), `trial_ends_at`, `plan_id` (FK→`plans`), `stripe_customer_id`, `stripe_subscription_id`, `created_at`, `updated_at`.
-  - Seed: insertar `('Coopecur Connect', 'coopecur', 'active', ...)` como tenant inicial.
-- **`plans`** — catálogo de planes.
-  - `id`, `code` (`basic`|`pro`|`enterprise`), `name`, `description`, `price_cents`, `currency`, `stripe_price_id`, `features` jsonb (flags por módulo: `billing`, `claims`, `meters`, ...), `limits` jsonb (`max_members`, `max_supplies`...), `is_active`.
-- **`tenant_members`** — relación usuario↔tenant con rol dentro del tenant.
-  - `id`, `tenant_id`, `user_id`, `role` (`admin`|`operador`|`user`), `created_at`. UNIQUE(`tenant_id`,`user_id`).
-- **`subscription_events`** — log de webhooks Stripe (idempotencia/auditoría).
-  - `id`, `tenant_id`, `stripe_event_id` (unique), `type`, `payload` jsonb, `created_at`.
+- Renombrar/relajar campos en `tenants`:
+  - `stripe_customer_id` → `billing_customer_id text`
+  - `stripe_subscription_id` → `billing_subscription_id text`
+  - Nuevo: `billing_provider text NOT NULL DEFAULT 'mercadopago'` (`'mercadopago' | 'stripe' | 'manual'`).
+- `plans`:
+  - `stripe_price_id` → `provider_price_id text` (id genérico que cada provider interpreta).
+  - Nuevo: `mp_preapproval_plan_id text` (opcional, específico MP) para el caso de pre-approval.
+- `subscription_events`:
+  - `stripe_event_id` → `provider_event_id text UNIQUE`.
+  - Nuevo: `provider text NOT NULL DEFAULT 'mercadopago'`.
+- Seed: 3 planes vacíos (`basic`, `pro`, `enterprise`) con `is_active=false` para definir luego por módulos.
 
-### Enum
-- `app_role` se extiende con `super_admin` (rol global, vive en `user_roles`). Los roles operativos por tenant viven en `tenant_members.role`.
+### 2. Capa abstracta de billing
 
-### Cambios en tablas existentes
-A todas las tablas de dominio (`members`, `supplies`, `supply_addresses`, `meters`, `meter_readings`, `invoices`, `invoice_items`, `payments`, `tariffs`, `claims`, `claim_comments`, `crews`, `work_orders`, `notifications`, `audit_log`) se agrega:
-- `tenant_id uuid NOT NULL REFERENCES tenants(id) ON DELETE CASCADE`
-- índice en `tenant_id`.
+`src/lib/billing/` (nuevo):
+- `provider.ts` — interface `BillingProvider`:
+  - `createCheckout({tenant, plan}) → { url }`
+  - `createCustomerPortal({tenant}) → { url }` (opcional, MP no tiene equivalente directo)
+  - `verifyWebhook(request) → { event, raw }`
+  - `mapEvent(event) → { type, tenantId, status, subscriptionId, ... }`
+- `mercadopago.ts` — implementación MP usando **Pre-approval (suscripciones)**:
+  - Checkout: crea `preapproval` (`POST /preapproval`) → devuelve `init_point`.
+  - Webhook: valida con `x-signature` HMAC + `MP_WEBHOOK_SECRET`.
+  - Mapea `preapproval.updated` / `payment.created` a status interno.
+- `index.ts` — `getBillingProvider(tenant)` devuelve la implementación según `tenant.billing_provider`. Hoy siempre MP.
 
-`profiles` y `user_roles` quedan **globales** (un usuario puede pertenecer a varios tenants).
+### 3. Server functions y rutas
 
-### Reset de datos
-Como acordamos empezar de cero: `TRUNCATE ... CASCADE` sobre las tablas de dominio antes de agregar `tenant_id NOT NULL`. Auth (`auth.users`, `profiles`, `user_roles`) no se toca. Se crea el tenant **Coopecur Connect** vacío y se asigna como miembro `admin` al usuario `alfredocbb@gmail.com` (que además recibe `super_admin` global).
+- `src/lib/billing-saas.functions.ts`:
+  - `createCheckoutSession({planId})` → llama al provider del tenant activo.
+  - `getCurrentSubscription()` → lee `tenants` + último evento.
+  - `cancelSubscription()` → MP `PUT /preapproval/{id}` con `status=cancelled`.
+- Webhook público: `src/routes/api/public/billing-webhook.$provider.ts` (splat por provider).
+  - Hoy responde solo a `provider='mercadopago'`.
+  - Verifica firma → guarda en `subscription_events` (idempotencia por `provider_event_id`) → actualiza `tenants.status` / `plan_id` / `billing_subscription_id`.
+- Trial: al crear tenant, `status='trial'`, `trial_ends_at = now() + 14 days`. Job/cron simple (server fn invocado por pg_cron o por un endpoint) marca `suspended` los vencidos sin suscripción activa.
 
----
+### 4. Secrets necesarios
 
-## 2. RLS — aislamiento por tenant
+Pediré con `add_secret` antes de codear:
+- `MP_ACCESS_TOKEN` (production o test según corresponda).
+- `MP_WEBHOOK_SECRET` (clave secreta del webhook MP, panel de Mercado Pago → Webhooks).
 
-Funciones security-definer:
-- `current_tenant_id()` — MVP: primer tenant del user logueado.
-- `is_tenant_member(_tenant uuid, _role text default null)`.
-- `is_super_admin()`.
+`stripe_*` no se pide; queda listo para sumar después.
 
-Reglas por tabla de dominio:
-- **SELECT**: `tenant_id = current_tenant_id() OR is_super_admin()`.
-- **INSERT/UPDATE/DELETE**: `is_tenant_member(tenant_id, 'admin'|'operador') OR is_super_admin()`. `user` solo lee lo propio (igual que el `client` actual).
+### 5. UI mínima
 
-`tenants`/`plans`/`tenant_members`: lectura propia + ALL para `super_admin`.
+- Página `/admin/facturacion-suscripcion` (solo `admin` del tenant):
+  - Muestra plan actual, estado, `trial_ends_at`.
+  - Botón "Suscribirme / Cambiar plan" → llama `createCheckoutSession` → redirige al `init_point` de MP.
+  - Banner global de trial countdown + bloqueo si `status in ('suspended','cancelled')`.
+- En el panel super_admin (se construye en Fase 3): CRUD de `plans` con campo `provider_price_id` + `mp_preapproval_plan_id`.
 
----
+### 6. Fuera de alcance ahora
 
-## 3. Auth, tenant context y onboarding
+- Stripe real (queda la interface lista).
+- Customer portal estilo Stripe (MP no lo tiene; se reemplaza con "cancelar suscripción" desde la app).
+- Definir los precios/features concretos de los 3 planes.
+- Multi-moneda.
 
-- `useAuth` extendido: `tenants[]`, `activeTenant`, `tenantRole`, `switchTenant(id)`, `isSuperAdmin`.
-- Login: tras autenticarse se cargan los `tenant_members` + `tenants`. Si tiene >1 → selector. Si 0 y no es super_admin → pantalla "esperando invitación".
-- Tenant activo persistido en `localStorage`, validado en server-side.
-- **Signup nuevo (self-service SaaS)**: form pide nombre cooperativa + datos del admin. Server-fn crea en una transacción: `auth.users` + `profiles` + `tenants` + `tenant_members(admin)` + arranca trial.
+## Orden de ejecución
 
----
+1. Migración A (limpiar membresía de alfredocbb).
+2. Migración B (renombrar columnas billing + agregar provider).
+3. Pedir secrets MP.
+4. Implementar capa `billing/` + provider MP.
+5. Webhook público + server fns de checkout/estado.
+6. UI de suscripción del tenant + bloqueo por estado.
 
-## 4. Suscripciones (Stripe gestionado por Lovable)
-
-1. Crear tenant → `stripe_customer`, `status='trial'`, `trial_ends_at = now() + 14 days`. Sin tarjeta requerida.
-2. Página **Plan & Facturación** (solo `admin` del tenant): muestra los 3 planes → checkout Stripe (`mode: subscription`, `trial_period_days` si aún en trial).
-3. Webhook `src/routes/api/public/stripe-webhook.ts` (verifica firma con `STRIPE_WEBHOOK_SECRET`, usa `supabaseAdmin`):
-   - `customer.subscription.created/updated` → guarda `stripe_subscription_id`, `plan_id`, status.
-   - `customer.subscription.deleted` → `cancelled`.
-   - `invoice.payment_failed` → `past_due`.
-   - Idempotencia via `subscription_events.stripe_event_id`.
-4. Si `status='trial'` y `trial_ends_at < now()` sin suscripción → `suspended`.
-5. Si `status in ('suspended','cancelled')` → pantalla de bloqueo con CTA "Suscribirme". El `super_admin` puede entrar igual (impersonación).
-
-Server fns (`src/lib/billing-saas.functions.ts`): `createCheckoutSession({planId})`, `createBillingPortalSession()`, `getCurrentSubscription()`.
-
----
-
-## 5. Panel super_admin (`/_authenticated/super/*`)
-
-Guard: `isSuperAdmin`. Layout propio.
-
-Páginas:
-- **Tenants** — listado (plan, estado, miembros, último pago). Acciones: crear, suspender/reactivar, cambiar plan manualmente, extender trial, impersonar.
-- **Planes** — CRUD de `plans`. Los `stripe_price_id` se pegan manualmente desde el dashboard de Stripe.
-- **Suscripciones** — vista cross-tenant del estado de facturación.
-- **Usuarios** — buscar globales, asignar `super_admin`, ver tenants a los que pertenecen.
-- **Auditoría global** — `audit_log` cross-tenant.
-
----
-
-## 6. UI del tenant
-
-- **Header**: nombre del tenant activo + selector si tiene varios + countdown del trial.
-- **Admin → Equipo**: invitar usuarios al tenant por email con rol (`admin`/`operador`/`user`). Reemplaza `admin.usuarios.tsx` actual.
-- Rutas existentes (`admin.socios`, `admin.facturacion`, etc.) siguen funcionando — solo cambia el filtrado por `tenant_id` vía RLS.
-- **Feature gates**: `useFeature('claims')` lee `plan.features` y oculta módulos no incluidos.
-
----
-
-## 7. Orden de implementación
-
-1. **DB migration** (tablas + enum + truncate + RLS + funciones + seed Coopecur Connect).
-2. **Rebrand strings** (título, layouts, landing).
-3. **Stripe enable** + secret webhook + page de planes (los 3 planes se definen luego por módulos).
-4. **Auth/tenant context** (useAuth extendido, signup nuevo, selector).
-5. **Webhook + checkout + billing portal**.
-6. **Panel super_admin**.
-7. **Equipo del tenant** (invitaciones) + feature gates.
-8. **Bloqueo por suscripción vencida**.
-
----
-
-## Detalles técnicos
-
-- Roles: `super_admin` (global) · `admin`/`operador`/`user` (por tenant).
-- `current_tenant_id()` MVP lee de `tenant_members`. V2: `set_config('app.tenant_id', ...)` por request.
-- Webhook con `supabaseAdmin`, firma Stripe verificada.
-- Stripe price IDs se ingresan manualmente para que controles el catálogo desde Stripe.
-- Trial: `trial_ends_at` en `tenants`; si el user agrega tarjeta antes del vencimiento se mantiene via `trial_period_days` de Stripe.
-- Coopecur Connect = tenant semilla, status `active`, plan a definir más adelante.
-
-## Fuera de alcance
-
-- Definir los 3 planes y sus features concretas (lo armás luego por módulos).
-- White-labeling visual por tenant (logo/colores) — la estructura queda lista pero no se implementa la UI.
-- Multi-moneda / impuestos automáticos.
-- SSO por tenant.
-- Migración de datos existentes (se resetea).
+¿Avanzo con esto?
