@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as PreciosRouteImport } from './routes/precios'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FuncionalidadesRouteImport } from './routes/funcionalidades'
 import { Route as CasosRouteImport } from './routes/casos'
@@ -45,6 +46,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreciosRoute = PreciosRouteImport.update({
+  id: '/precios',
+  path: '/precios',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/casos': typeof CasosRoute
   '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
+  '/precios': typeof PreciosRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/casos': typeof CasosRoute
   '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
+  '/precios': typeof PreciosRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/cliente': typeof AuthenticatedClienteRoute
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/casos': typeof CasosRoute
   '/funcionalidades': typeof FuncionalidadesRoute
   '/login': typeof LoginRoute
+  '/precios': typeof PreciosRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
@@ -277,6 +286,7 @@ export interface FileRouteTypes {
     | '/casos'
     | '/funcionalidades'
     | '/login'
+    | '/precios'
     | '/register'
     | '/reset-password'
     | '/admin'
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/casos'
     | '/funcionalidades'
     | '/login'
+    | '/precios'
     | '/register'
     | '/reset-password'
     | '/cliente'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/casos'
     | '/funcionalidades'
     | '/login'
+    | '/precios'
     | '/register'
     | '/reset-password'
     | '/_authenticated/admin'
@@ -362,6 +374,7 @@ export interface RootRouteChildren {
   CasosRoute: typeof CasosRoute
   FuncionalidadesRoute: typeof FuncionalidadesRoute
   LoginRoute: typeof LoginRoute
+  PreciosRoute: typeof PreciosRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicBillingWebhookProviderRoute: typeof ApiPublicBillingWebhookProviderRoute
@@ -381,6 +394,13 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/precios': {
+      id: '/precios'
+      path: '/precios'
+      fullPath: '/precios'
+      preLoaderRoute: typeof PreciosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -634,6 +654,7 @@ const rootRouteChildren: RootRouteChildren = {
   CasosRoute: CasosRoute,
   FuncionalidadesRoute: FuncionalidadesRoute,
   LoginRoute: LoginRoute,
+  PreciosRoute: PreciosRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicBillingWebhookProviderRoute: ApiPublicBillingWebhookProviderRoute,
