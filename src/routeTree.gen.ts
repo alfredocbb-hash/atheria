@@ -30,6 +30,7 @@ import { Route as AuthenticatedSuperPlanesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedSuperHealthRouteImport } from './routes/_authenticated/super.health'
 import { Route as AuthenticatedSuperFacturacionRouteImport } from './routes/_authenticated/super.facturacion'
 import { Route as AuthenticatedSuperEventosRouteImport } from './routes/_authenticated/super.eventos'
+import { Route as AuthenticatedSuperConfiguracionRouteImport } from './routes/_authenticated/super.configuracion'
 import { Route as AuthenticatedAdminUsuariosRouteImport } from './routes/_authenticated/admin.usuarios'
 import { Route as AuthenticatedAdminTarifasRouteImport } from './routes/_authenticated/admin.tarifas'
 import { Route as AuthenticatedAdminSuministrosRouteImport } from './routes/_authenticated/admin.suministros'
@@ -37,6 +38,7 @@ import { Route as AuthenticatedAdminSociosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminReclamosRouteImport } from './routes/_authenticated/admin.reclamos'
 import { Route as AuthenticatedAdminFacturacionSuscripcionRouteImport } from './routes/_authenticated/admin.facturacion-suscripcion'
 import { Route as AuthenticatedAdminFacturacionRouteImport } from './routes/_authenticated/admin.facturacion'
+import { Route as AuthenticatedAdminConfiguracionRouteImport } from './routes/_authenticated/admin.configuracion'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as ApiPublicBillingWebhookProviderRouteImport } from './routes/api/public/billing-webhook.$provider'
 
@@ -149,6 +151,12 @@ const AuthenticatedSuperEventosRoute =
     path: '/eventos',
     getParentRoute: () => AuthenticatedSuperRoute,
   } as any)
+const AuthenticatedSuperConfiguracionRoute =
+  AuthenticatedSuperConfiguracionRouteImport.update({
+    id: '/configuracion',
+    path: '/configuracion',
+    getParentRoute: () => AuthenticatedSuperRoute,
+  } as any)
 const AuthenticatedAdminUsuariosRoute =
   AuthenticatedAdminUsuariosRouteImport.update({
     id: '/usuarios',
@@ -191,6 +199,12 @@ const AuthenticatedAdminFacturacionRoute =
     path: '/facturacion',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminConfiguracionRoute =
+  AuthenticatedAdminConfiguracionRouteImport.update({
+    id: '/configuracion',
+    path: '/configuracion',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminAuditoriaRoute =
   AuthenticatedAdminAuditoriaRouteImport.update({
     id: '/auditoria',
@@ -219,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/super': typeof AuthenticatedSuperRouteWithChildren
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/admin/configuracion': typeof AuthenticatedAdminConfiguracionRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
@@ -226,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/super/configuracion': typeof AuthenticatedSuperConfiguracionRoute
   '/super/eventos': typeof AuthenticatedSuperEventosRoute
   '/super/facturacion': typeof AuthenticatedSuperFacturacionRoute
   '/super/health': typeof AuthenticatedSuperHealthRoute
@@ -248,6 +264,7 @@ export interface FileRoutesByTo {
   '/cliente': typeof AuthenticatedClienteRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/admin/configuracion': typeof AuthenticatedAdminConfiguracionRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
@@ -255,6 +272,7 @@ export interface FileRoutesByTo {
   '/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/super/configuracion': typeof AuthenticatedSuperConfiguracionRoute
   '/super/eventos': typeof AuthenticatedSuperEventosRoute
   '/super/facturacion': typeof AuthenticatedSuperFacturacionRoute
   '/super/health': typeof AuthenticatedSuperHealthRoute
@@ -281,6 +299,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/super': typeof AuthenticatedSuperRouteWithChildren
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/_authenticated/admin/configuracion': typeof AuthenticatedAdminConfiguracionRoute
   '/_authenticated/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/_authenticated/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/_authenticated/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
@@ -288,6 +307,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/suministros': typeof AuthenticatedAdminSuministrosRoute
   '/_authenticated/admin/tarifas': typeof AuthenticatedAdminTarifasRoute
   '/_authenticated/admin/usuarios': typeof AuthenticatedAdminUsuariosRoute
+  '/_authenticated/super/configuracion': typeof AuthenticatedSuperConfiguracionRoute
   '/_authenticated/super/eventos': typeof AuthenticatedSuperEventosRoute
   '/_authenticated/super/facturacion': typeof AuthenticatedSuperFacturacionRoute
   '/_authenticated/super/health': typeof AuthenticatedSuperHealthRoute
@@ -314,6 +334,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/super'
     | '/admin/auditoria'
+    | '/admin/configuracion'
     | '/admin/facturacion'
     | '/admin/facturacion-suscripcion'
     | '/admin/reclamos'
@@ -321,6 +342,7 @@ export interface FileRouteTypes {
     | '/admin/suministros'
     | '/admin/tarifas'
     | '/admin/usuarios'
+    | '/super/configuracion'
     | '/super/eventos'
     | '/super/facturacion'
     | '/super/health'
@@ -343,6 +365,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/onboarding'
     | '/admin/auditoria'
+    | '/admin/configuracion'
     | '/admin/facturacion'
     | '/admin/facturacion-suscripcion'
     | '/admin/reclamos'
@@ -350,6 +373,7 @@ export interface FileRouteTypes {
     | '/admin/suministros'
     | '/admin/tarifas'
     | '/admin/usuarios'
+    | '/super/configuracion'
     | '/super/eventos'
     | '/super/facturacion'
     | '/super/health'
@@ -375,6 +399,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/super'
     | '/_authenticated/admin/auditoria'
+    | '/_authenticated/admin/configuracion'
     | '/_authenticated/admin/facturacion'
     | '/_authenticated/admin/facturacion-suscripcion'
     | '/_authenticated/admin/reclamos'
@@ -382,6 +407,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/suministros'
     | '/_authenticated/admin/tarifas'
     | '/_authenticated/admin/usuarios'
+    | '/_authenticated/super/configuracion'
     | '/_authenticated/super/eventos'
     | '/_authenticated/super/facturacion'
     | '/_authenticated/super/health'
@@ -555,6 +581,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSuperEventosRouteImport
       parentRoute: typeof AuthenticatedSuperRoute
     }
+    '/_authenticated/super/configuracion': {
+      id: '/_authenticated/super/configuracion'
+      path: '/configuracion'
+      fullPath: '/super/configuracion'
+      preLoaderRoute: typeof AuthenticatedSuperConfiguracionRouteImport
+      parentRoute: typeof AuthenticatedSuperRoute
+    }
     '/_authenticated/admin/usuarios': {
       id: '/_authenticated/admin/usuarios'
       path: '/usuarios'
@@ -604,6 +637,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFacturacionRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/configuracion': {
+      id: '/_authenticated/admin/configuracion'
+      path: '/configuracion'
+      fullPath: '/admin/configuracion'
+      preLoaderRoute: typeof AuthenticatedAdminConfiguracionRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/auditoria': {
       id: '/_authenticated/admin/auditoria'
       path: '/auditoria'
@@ -623,6 +663,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
+  AuthenticatedAdminConfiguracionRoute: typeof AuthenticatedAdminConfiguracionRoute
   AuthenticatedAdminFacturacionRoute: typeof AuthenticatedAdminFacturacionRoute
   AuthenticatedAdminFacturacionSuscripcionRoute: typeof AuthenticatedAdminFacturacionSuscripcionRoute
   AuthenticatedAdminReclamosRoute: typeof AuthenticatedAdminReclamosRoute
@@ -635,6 +676,7 @@ interface AuthenticatedAdminRouteChildren {
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
+  AuthenticatedAdminConfiguracionRoute: AuthenticatedAdminConfiguracionRoute,
   AuthenticatedAdminFacturacionRoute: AuthenticatedAdminFacturacionRoute,
   AuthenticatedAdminFacturacionSuscripcionRoute:
     AuthenticatedAdminFacturacionSuscripcionRoute,
@@ -650,6 +692,7 @@ const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
 interface AuthenticatedSuperRouteChildren {
+  AuthenticatedSuperConfiguracionRoute: typeof AuthenticatedSuperConfiguracionRoute
   AuthenticatedSuperEventosRoute: typeof AuthenticatedSuperEventosRoute
   AuthenticatedSuperFacturacionRoute: typeof AuthenticatedSuperFacturacionRoute
   AuthenticatedSuperHealthRoute: typeof AuthenticatedSuperHealthRoute
@@ -659,6 +702,7 @@ interface AuthenticatedSuperRouteChildren {
 }
 
 const AuthenticatedSuperRouteChildren: AuthenticatedSuperRouteChildren = {
+  AuthenticatedSuperConfiguracionRoute: AuthenticatedSuperConfiguracionRoute,
   AuthenticatedSuperEventosRoute: AuthenticatedSuperEventosRoute,
   AuthenticatedSuperFacturacionRoute: AuthenticatedSuperFacturacionRoute,
   AuthenticatedSuperHealthRoute: AuthenticatedSuperHealthRoute,

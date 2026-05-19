@@ -1,41 +1,83 @@
-## Plan
+# Módulo de Configuración
 
-Voy a corregir el flujo de login/super admin atacando el error que muestra la captura: no parece ser un 404 de ruta, sino un fallo cargando el módulo dinámico de la ruta autenticada (`_authenticated-*.js`) justo después del login, combinado con redirecciones/refetches repetidos.
+Plan para configuración por **tenant** (cooperativa) y configuración **global** (super admin).
 
-### 1. Corregir redirección de login para super admin
-- Revisar `src/routes/login.tsx`.
-- Quitar o ajustar el `useEffect` que actualmente redirige usuarios autenticados solo con `isAdminOrOperator`, porque un super admin con rol `admin` puede terminar en `/admin` en vez de `/super`.
-- Mantener una única decisión de destino basada en:
-  - super admin → `/super`
-  - admin/operator → `/admin`
-  - cliente → `/cliente`
-- Limpiar parámetros internos de preview como `__lovable_sha` si vienen dentro del redirect, para no navegar a URLs stale después de cambios de build.
+## 1. Base de datos
 
-### 2. Hacer robusto el error de “dynamic import”
-- Ajustar el `errorComponent` raíz en `src/routes/__root.tsx`.
-- Detectar errores tipo `error loading dynamically imported module` / chunk load failure.
-- Para ese caso, el botón “Try again” hará una recarga limpia del navegador en vez de solo `router.invalidate()`, porque invalidar el router no vuelve a descargar correctamente un chunk stale.
-- Mostrar un mensaje más claro en español para este caso.
+### Tabla `tenant_settings` (1:1 con `tenants`)
+Parámetros del sistema + datos de la empresa de cada cooperativa.
 
-### 3. Estabilizar el guard de super admin
-- Revisar `src/hooks/use-super-admin.ts` y `src/routes/_authenticated/super.tsx`.
-- Hacer que `useIsSuperAdmin()` solo consulte cuando la sesión y los roles ya estén listos.
-- Desactivar refetches innecesarios en foco/reconexión para la consulta `super_admins`, porque el usuario super admin ya fue confirmado y ahora se ve que se consulta repetidamente.
-- Mantener la redirección fuera de `/super` solo cuando haya una respuesta final confirmada negativa, no durante loading/error transitorio.
+Campos:
+- `tenant_id` (PK, FK a tenants)
+- **Parámetros del sistema:**
+  - `billing_day` (int 1–31) — día de facturación
+  - `first_due_day` (int 1–31) — primer vencimiento
+  - `second_due_day` (int 1–31) — segundo vencimiento
+  - `interest_rate_after_first` (numeric) — % interés diario tras 1er venc.
+  - `interest_rate_after_second` (numeric) — % interés diario tras 2do venc.
+  - `cesp_code` (text) — código CESP
+- **Datos de la empresa:**
+  - `legal_name`, `cuit`, `trade_name`
+  - `legal_address`, `fiscal_address`
+  - `email`, `phone_main`, `phone_mobile`, `whatsapp`, `website`
+  - `email_services`, `email_inquiries`, `email_collections`
+  - `iibb`
+- `updated_at`, `updated_by`
 
-### 4. Completar guards admin que quedaron inconsistentes
-- Revisar las rutas admin restantes (`tarifas`, `usuarios`, `auditoria`, etc.).
-- Asegurar que todas esperen `rolesLoaded === true` antes de redirigir.
-- Reemplazar dependencias de `useEffect` basadas en el objeto `auth` completo por dependencias primitivas, para evitar loops.
+**RLS:**
+- SELECT: super admin, o miembros del tenant (admin/operador/user) del propio tenant
+- UPDATE/INSERT: super admin, o admin del tenant
+- Trigger `touch_updated_at`
 
-### 5. Verificación
-- Revisar consola/network para confirmar que desaparece el error de módulo dinámico.
-- Confirmar que login como super admin navega y permanece en `/super`.
-- Confirmar que `/super`, `/super/tenants`, `/super/planes`, `/super/eventos`, `/super/health` y `/super/facturacion` existen y no producen pantalla genérica.
-- Confirmar que las consultas `super_admins` no se disparan cada pocos segundos sin interacción.
+### Tabla `app_settings` (singleton global)
+Configuración global del super admin (marca SaaS, soporte, defaults).
 
-### No tocaré
-- Base de datos.
-- Roles existentes.
-- Políticas de seguridad.
-- `src/routeTree.gen.ts` manualmente, porque es generado automáticamente.
+Campos sugeridos:
+- `id` (singleton, check id = 1)
+- `platform_name`, `support_email`, `support_phone`, `support_whatsapp`
+- `default_billing_day`, `default_first_due_day`, `default_second_due_day`
+- `default_interest_after_first`, `default_interest_after_second`
+- `terms_url`, `privacy_url`
+- `updated_at`, `updated_by`
+
+**RLS:** SELECT autenticados; UPDATE solo super admin.
+
+## 2. UI Tenant — `/admin/configuracion`
+
+Nueva ruta `src/routes/_authenticated/admin.configuracion.tsx` con dos tabs (shadcn `Tabs`):
+
+1. **Parámetros del sistema** — formulario con los 6 campos numéricos/texto, validados con zod (días 1–31, % ≥ 0).
+2. **Datos de la empresa** — formulario agrupado en secciones: Identificación (razón social, CUIT, nombre fantasía, IIBB), Domicilios, Contacto, Emails operativos.
+
+Patrón: `react-hook-form` + `zodResolver`, `useQuery` para leer, `useMutation` para guardar. Toast de éxito/error.
+
+Agregar entrada "Configuración" en el menú lateral del admin.
+
+## 3. UI Super Admin — `/super/configuracion`
+
+Nueva ruta `src/routes/_authenticated/super.configuracion.tsx` con dos tabs:
+
+1. **Plataforma** — edita `app_settings` (nombre, contactos de soporte, defaults, URLs legales).
+2. **Configuración por cooperativa** — selector de tenant + reutiliza el mismo formulario que el tenant (mismos componentes) para editar `tenant_settings` de cualquier cooperativa.
+
+Agregar entrada "Configuración" en el menú del super admin.
+
+## 4. Componentes compartidos
+
+- `src/components/settings/SystemParamsForm.tsx`
+- `src/components/settings/CompanyInfoForm.tsx`
+- `src/components/settings/PlatformSettingsForm.tsx`
+- `src/hooks/use-tenant-settings.ts` y `use-app-settings.ts`
+
+Validaciones zod compartidas en `src/lib/settings-schemas.ts` (CUIT 11 dígitos, email válido, URL válida, teléfonos, % entre 0–100, días 1–31).
+
+## 5. Detalles técnicos
+
+- Lecturas desde el navegador con `supabase` (RLS aplica) — no requiere server function.
+- Al crear un nuevo tenant, insertar fila default en `tenant_settings` (trigger o al momento del onboarding).
+- Seed de `app_settings` con un INSERT inicial id=1.
+- No tocar `routeTree.gen.ts` ni archivos preconfigurados.
+
+## Fuera de alcance
+- Aplicar automáticamente fechas/intereses al motor de facturación (se integra después).
+- Logo/branding por tenant (puede añadirse luego si se necesita).
