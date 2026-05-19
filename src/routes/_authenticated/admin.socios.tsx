@@ -39,10 +39,10 @@ export function SociosPage() {
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
         <div className="relative min-w-[220px] flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por nombre, n° socio, documento, email…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="Buscar por nombre, n° cliente, documento, email…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <Button variant="tech" size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:socio.new", viewKey: "socio.new", title: "Nuevo socio", iconKey: "plus", parentModule: "socios" })}>
-          <Plus className="mr-1 h-4 w-4" />Nuevo socio
+        <Button variant="tech" size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:socio.new", viewKey: "socio.new", title: "Nuevo cliente", iconKey: "plus", parentModule: "socios" })}>
+          <Plus className="mr-1 h-4 w-4" />Nuevo cliente
         </Button>
       </div>
       <CardContent className="pt-4">
@@ -50,7 +50,7 @@ export function SociosPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>N° socio</TableHead><TableHead>Nombre</TableHead><TableHead>Documento</TableHead>
+                  <TableHead>N° cliente</TableHead><TableHead>Nombre</TableHead><TableHead>Documento</TableHead>
                   <TableHead>Contacto</TableHead><TableHead>Cuenta</TableHead><TableHead>Estado</TableHead>
                   <TableHead className="w-20 text-right">Acciones</TableHead>
                 </TableRow>
@@ -59,7 +59,7 @@ export function SociosPage() {
                 {isLoading ? (
                   <TableRow><TableCell colSpan={7} className="py-10 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" /></TableCell></TableRow>
                 ) : (data ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">Sin socios cargados.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">Sin clientes cargados.</TableCell></TableRow>
                 ) : (
                   (data ?? []).map((m: any) => (
                     <TableRow key={m.id}>
@@ -92,8 +92,8 @@ export function SociosPage() {
                           </Button>
                           <DeleteButton
                             iconOnly
-                            title={`¿Eliminar socio ${m.full_name}?`}
-                            description="Se eliminará el socio definitivamente. Si tiene suministros, facturas o reclamos, la operación será rechazada."
+                            title={`¿Eliminar cliente ${m.full_name}?`}
+                            description="Se eliminará el cliente definitivamente. Si tiene servicios, facturas o reclamos, la operación será rechazada."
                             onConfirm={() => del.mutate(m.id)}
                           />
                         </div>
