@@ -42,19 +42,23 @@ function SuperLayoutRoute() {
   }, []);
 
   React.useEffect(() => {
-    if (!sa.isLoading && sa.data && !sa.data.isSuperAdmin) {
+    if (auth.isLoading || !auth.rolesLoaded) return;
+    if (!auth.isAuthenticated) return; // _authenticated layout handles it
+    if (sa.isLoading || sa.isFetching) return;
+    // Only redirect when we have a confirmed negative answer.
+    if (sa.data && sa.data.isSuperAdmin === false) {
       navigate({ to: "/", replace: true });
     }
-  }, [sa.isLoading, sa.data, navigate]);
+  }, [auth.isLoading, auth.rolesLoaded, auth.isAuthenticated, sa.isLoading, sa.isFetching, sa.data, navigate]);
 
-  if (sa.isLoading || !sa.data) {
+  if (auth.isLoading || !auth.rolesLoaded || sa.isLoading || (!sa.data && !sa.isError)) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
-  if (!sa.data.isSuperAdmin) return null;
+  if (!sa.data?.isSuperAdmin) return null;
 
   const NAV = [
     { label: "Dashboard", to: "/super", icon: LayoutDashboard },

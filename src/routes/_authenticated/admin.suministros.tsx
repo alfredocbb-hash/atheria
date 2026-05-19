@@ -33,7 +33,7 @@ export function SuministrosPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => { const t = setTimeout(() => setDebounced(search), 300); return () => clearTimeout(t); }, [search]);
-  useEffect(() => { if (!auth.isLoading && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth, navigate]);
+  useEffect(() => { if (!auth.isLoading && auth.rolesLoaded && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth.isLoading, auth.rolesLoaded, auth.isAdminOrOperator, navigate]);
 
   const filters = {
     search: debounced || undefined,

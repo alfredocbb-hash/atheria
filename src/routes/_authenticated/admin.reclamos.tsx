@@ -30,7 +30,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 export function ReclamosPage() {
   const auth = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (!auth.isLoading && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth, navigate]);
+  useEffect(() => { if (!auth.isLoading && auth.rolesLoaded && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth.isLoading, auth.rolesLoaded, auth.isAdminOrOperator, navigate]);
   return (
     <Tabs defaultValue="claims" className="space-y-4">
         <TabsList>
