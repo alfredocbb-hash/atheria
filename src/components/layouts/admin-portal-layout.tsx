@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Building2, CreditCard, FileText, Gauge, LayoutDashboard, LogOut, PanelLeftClose, PanelLeftOpen, Receipt, Server, ShieldCheck, Users, Wallet, Wrench, X } from "lucide-react";
+import { Building2, CreditCard, FileText, Gauge, LayoutDashboard, LogOut, PanelLeftClose, PanelLeftOpen, Receipt, Server, Settings, ShieldCheck, Users, Wallet, Wrench, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -61,6 +61,7 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
     { label: "Reclamos", icon: Wrench, to: "/admin/reclamos", enabled: true },
     { label: "Auditoría", icon: FileText, to: "/admin/auditoria", enabled: true, adminOnly: true },
     { label: "Suscripción", icon: CreditCard, to: "/admin/facturacion-suscripcion", enabled: true, adminOnly: true },
+    { label: "Configuración", icon: Settings, to: "/admin/configuracion", enabled: true, adminOnly: true },
   ];
   return (
     <div className="flex min-h-screen bg-secondary/40">
