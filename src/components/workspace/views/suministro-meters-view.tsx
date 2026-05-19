@@ -39,7 +39,7 @@ export function SuministroMetersView({ payload }: ViewComponentProps) {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Suministros</p>
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Servicios</p>
         <h1 className="text-2xl font-semibold tracking-tight">Medidores {supplyNumber ? `· ${supplyNumber}` : ""}</h1>
       </div>
       <Card>
