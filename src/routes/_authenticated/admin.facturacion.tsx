@@ -42,7 +42,7 @@ function ReadingsTab() {
   return (
     <Card>
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
-        <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:lectura.new", viewKey: "lectura.new", title: "Nueva lectura", iconKey: "gauge", parentModule: "facturacion" })}>
+        <Button variant="tech" size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:lectura.new", viewKey: "lectura.new", title: "Nueva lectura", iconKey: "gauge", parentModule: "facturacion" })}>
           <Plus className="mr-1 h-4 w-4" />Cargar lectura
         </Button>
       </div>
@@ -99,7 +99,7 @@ function InvoicesTab() {
               <SelectItem value="void">Anuladas</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:factura.new", viewKey: "factura.new", title: "Generar factura", iconKey: "receipt", parentModule: "facturacion" })}>
+          <Button variant="tech" size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:factura.new", viewKey: "factura.new", title: "Generar factura", iconKey: "receipt", parentModule: "facturacion" })}>
             <Plus className="mr-1 h-4 w-4" />Generar factura
           </Button>
       </div>

@@ -12,7 +12,7 @@ export function WorkspaceTabsBar() {
   const ws = useWorkspace();
   const auth = useAuth();
   return (
-    <div className="flex h-10 items-center gap-px overflow-x-auto border-b bg-card px-2">
+    <div className="flex h-10 items-center gap-1 overflow-x-auto border-b border-border/60 bg-card/70 px-3 backdrop-blur-sm">
       {ws.openTabs.map((tab) => {
         const isActive = ws.activeId === tab.id;
         let title = "";
@@ -38,13 +38,13 @@ export function WorkspaceTabsBar() {
                 onClick={() => ws.setActive(tab.id)}
                 onAuxClick={(e) => { if (e.button === 1 && !pinned) ws.closeTab(tab.id); }}
                 className={cn(
-                  "group flex h-8 cursor-pointer items-center gap-2 rounded-md px-3 text-xs font-medium transition-colors",
+                  "group relative flex h-9 cursor-pointer items-center gap-2 px-3 text-xs font-medium transition-colors",
                   isActive
-                    ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ? "text-foreground after:absolute after:inset-x-2 after:-bottom-px after:h-[2px] after:rounded-t-full after:bg-[var(--brand-cyan)] after:shadow-[0_0_8px_var(--brand-cyan)]"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <Icon className={cn("h-3.5 w-3.5 shrink-0 transition-colors", isActive && "text-[var(--brand-cyan)]")} />
                 <span className="whitespace-nowrap">{title}</span>
                 {!pinned && (
                   <button
@@ -52,7 +52,7 @@ export function WorkspaceTabsBar() {
                     aria-label={`Cerrar ${title}`}
                     onClick={(e) => { e.stopPropagation(); ws.closeTab(tab.id); }}
                     className={cn(
-                      "ml-1 inline-flex h-4 w-4 items-center justify-center rounded-sm hover:bg-muted-foreground/20",
+                      "ml-1 inline-flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground/70 transition-colors hover:bg-foreground/10 hover:text-foreground",
                       isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100",
                     )}
                   >

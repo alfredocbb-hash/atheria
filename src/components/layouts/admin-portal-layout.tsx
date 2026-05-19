@@ -51,25 +51,38 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
   ];
   return (
     <div className="flex min-h-screen bg-secondary/40">
-      <aside className="hidden w-64 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
-        <div className="flex items-center gap-2 border-b border-sidebar-border px-5 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+      <aside
+        className="hidden w-64 shrink-0 flex-col text-sidebar-foreground md:flex"
+        style={{ background: "var(--gradient-sidebar)", borderRight: "1px solid color-mix(in oklab, var(--brand-cyan) 18%, transparent)" }}
+      >
+        <div className="flex items-center gap-3 border-b border-white/5 px-5 py-5">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-md text-white shadow-[0_4px_14px_-4px_rgba(91,200,230,0.55)]"
+            style={{ background: "var(--gradient-accent)" }}
+          >
             <Building2 className="h-4 w-4" />
           </div>
-          <div>
-            <p className="text-sm font-bold leading-none">Coopecur 2.0</p>
-            <p className="text-[11px] text-sidebar-foreground/70">Backoffice</p>
+          <div className="leading-tight">
+            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/55">Atheria</p>
+            <p className="font-display text-sm font-semibold tracking-wide text-white">Backoffice</p>
           </div>
         </div>
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 space-y-0.5 p-3">
+          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Operación</p>
           {NAV.map((item) => {
             const Icon = item.icon;
-            const base = "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors";
+            const base =
+              "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200";
             if (item.adminOnly && !auth.hasRole("admin")) return null;
             if (!item.enabled) {
               return (
-                <span key={item.label} className={cn(base, "cursor-not-allowed text-sidebar-foreground/40")} title="Disponible en próximas fases">
-                  <Icon className="h-4 w-4" />{item.label}
+                <span
+                  key={item.label}
+                  className={cn(base, "cursor-not-allowed text-white/30")}
+                  title="Disponible en próximas fases"
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
                 </span>
               );
             }
@@ -77,36 +90,50 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
               <Link
                 key={item.label}
                 to={item.to!}
-                className={cn(base, "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground")}
-                activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
+                className={cn(
+                  base,
+                  "text-white/75 hover:bg-white/[0.06] hover:text-white [&_svg]:text-white/60 [&_svg]:hover:text-[var(--brand-cyan)]",
+                )}
+                activeProps={{
+                  className:
+                    "bg-white/[0.08] text-white before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[2px] before:-translate-y-1/2 before:rounded-full before:bg-[var(--brand-lime)] before:shadow-[0_0_8px_var(--brand-lime)] [&_svg]:!text-[var(--brand-cyan)]",
+                }}
               >
-                <Icon className="h-4 w-4" />{item.label}
+                <Icon className="h-4 w-4 transition-colors" />
+                {item.label}
               </Link>
             );
           })}
         </nav>
-        <div className="border-t border-sidebar-border p-3">
-          <p className="px-2 pb-2 text-[11px] text-sidebar-foreground/60">{auth.user?.email}</p>
-          <Button variant="ghost" size="sm" className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={() => auth.signOut()}>
-            <LogOut className="mr-2 h-4 w-4" />Cerrar sesión
+        <div className="border-t border-white/5 p-3">
+          <p className="truncate px-2 pb-2 text-[11px] text-white/55">{auth.user?.email}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start text-white/80 hover:bg-white/[0.06] hover:text-white"
+            onClick={() => auth.signOut()}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Cerrar sesión
           </Button>
         </div>
       </aside>
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b bg-card px-6 py-3">
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/60 bg-card/75 px-6 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-card/60">
           <Link to="/admin" className="flex items-center gap-2 md:invisible">
-            <Building2 className="h-5 w-5 text-primary" />
-            <span className="text-sm font-bold">Coopecur 2.0</span>
+            <Building2 className="h-5 w-5 text-accent" />
+            <span className="font-display text-sm font-semibold tracking-wide">Atheria</span>
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             {sa.data?.isSuperAdmin && acting.id && (
-              <div className="mr-2 inline-flex items-center gap-1 rounded-md border bg-amber-50 px-2 py-1 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-100">
-                <Server className="h-3.5 w-3.5" />
-                Actuando como: <span className="font-semibold">{acting.name ?? acting.id.slice(0, 8)}</span>
+              <div className="mr-1 inline-flex items-center gap-1.5 rounded-full border border-[color:var(--brand-cyan)]/40 bg-[color:var(--brand-cyan)]/10 px-2.5 py-1 text-xs font-medium text-[color:var(--brand-cyan)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--brand-lime)] shadow-[0_0_6px_var(--brand-lime)]" />
+                <span className="text-foreground/80">Actuando como</span>
+                <span className="font-semibold text-foreground">{acting.name ?? acting.id.slice(0, 8)}</span>
                 <button
                   type="button"
                   onClick={stopActing}
-                  className="ml-1 rounded p-0.5 hover:bg-amber-100 dark:hover:bg-amber-900"
+                  className="ml-1 rounded-full p-0.5 text-foreground/60 transition-colors hover:bg-[color:var(--brand-cyan)]/20 hover:text-foreground"
                   title="Salir de la cooperativa"
                 >
                   <X className="h-3 w-3" />
@@ -116,13 +143,15 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
             {sa.data?.isSuperAdmin && (
               <Link
                 to="/super/tenants"
-                className="mr-2 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium hover:bg-secondary"
+                className="mr-1 inline-flex items-center gap-1.5 rounded-md border border-border/70 px-2.5 py-1 text-xs font-medium text-foreground/80 transition-colors hover:border-[color:var(--brand-cyan)]/60 hover:text-[color:var(--brand-cyan)]"
               >
                 <Server className="h-3.5 w-3.5" /> Plataforma
               </Link>
             )}
             <NotificationsBell />
-            <Button variant="ghost" size="sm" className="md:hidden" onClick={() => auth.signOut()}><LogOut className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" className="md:hidden" onClick={() => auth.signOut()}>
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
         </header>
         <SubscriptionGate />

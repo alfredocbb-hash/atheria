@@ -41,7 +41,7 @@ export function SociosPage() {
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar por nombre, n° socio, documento, email…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:socio.new", viewKey: "socio.new", title: "Nuevo socio", iconKey: "plus", parentModule: "socios" })}>
+        <Button variant="tech" size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:socio.new", viewKey: "socio.new", title: "Nuevo socio", iconKey: "plus", parentModule: "socios" })}>
           <Plus className="mr-1 h-4 w-4" />Nuevo socio
         </Button>
       </div>
