@@ -54,17 +54,24 @@ function SuperLayoutRoute() {
 
   return (
     <div className="flex min-h-screen bg-secondary/40">
-      <aside className="hidden w-64 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
-        <div className="flex items-center gap-2 border-b border-sidebar-border px-5 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+      <aside
+        className="hidden w-64 shrink-0 flex-col text-sidebar-foreground md:flex"
+        style={{ background: "var(--gradient-sidebar)", borderRight: "1px solid color-mix(in oklab, var(--brand-cyan) 18%, transparent)" }}
+      >
+        <div className="flex items-center gap-3 border-b border-white/5 px-5 py-5">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-md text-white shadow-[0_4px_14px_-4px_rgba(91,200,230,0.55)]"
+            style={{ background: "var(--gradient-accent)" }}
+          >
             <Receipt className="h-4 w-4" />
           </div>
-          <div>
-            <p className="text-sm font-bold leading-none">Plataforma</p>
-            <p className="text-[11px] text-sidebar-foreground/70">Super admin</p>
+          <div className="leading-tight">
+            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/55">Atheria</p>
+            <p className="font-display text-sm font-semibold tracking-wide text-white">Plataforma</p>
           </div>
         </div>
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 space-y-0.5 p-3">
+          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Super admin</p>
           {NAV.map((item) => {
             const Icon = item.icon;
             return (
@@ -72,11 +79,14 @@ function SuperLayoutRoute() {
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                  "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-white/75 transition-colors duration-200 hover:bg-white/[0.06] hover:text-white [&_svg]:text-white/60 [&_svg]:hover:text-[var(--brand-cyan)]",
                 )}
-                activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
+                activeProps={{
+                  className:
+                    "bg-white/[0.08] text-white before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[2px] before:-translate-y-1/2 before:rounded-full before:bg-[var(--brand-lime)] before:shadow-[0_0_8px_var(--brand-lime)] [&_svg]:!text-[var(--brand-cyan)]",
+                }}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4 transition-colors" />
                 {item.label}
               </Link>
             );
@@ -84,19 +94,19 @@ function SuperLayoutRoute() {
           {hasActing && (
             <Link
               to="/admin"
-              className="mt-6 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/60"
+              className="mt-6 flex items-center gap-3 rounded-md border border-[color:var(--brand-cyan)]/30 px-3 py-2 text-sm font-medium text-[color:var(--brand-cyan)] transition-colors hover:bg-[color:var(--brand-cyan)]/10"
             >
               <CreditCard className="h-4 w-4" />
               Volver al backoffice
             </Link>
           )}
         </nav>
-        <div className="border-t border-sidebar-border p-3">
-          <p className="px-2 pb-2 text-[11px] text-sidebar-foreground/60">{auth.user?.email}</p>
+        <div className="border-t border-white/5 p-3">
+          <p className="truncate px-2 pb-2 text-[11px] text-white/55">{auth.user?.email}</p>
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+            className="w-full justify-start text-white/80 hover:bg-white/[0.06] hover:text-white"
             onClick={() => auth.signOut()}
           >
             <LogOut className="mr-2 h-4 w-4" /> Cerrar sesión
