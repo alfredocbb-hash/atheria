@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ type Props = {
 
 export function SystemParamsForm({ initial, isLoading, isSaving, onSubmit }: Props) {
   const form = useForm<SystemParamsValues>({
-    resolver: zodResolver(systemParamsSchema),
+    resolver: zodResolver(systemParamsSchema) as unknown as Resolver<SystemParamsValues>,
     defaultValues: {
       billing_day: null,
       first_due_day: null,
