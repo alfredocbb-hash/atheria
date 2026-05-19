@@ -4,6 +4,7 @@ import { SocioNewView } from "./views/socio-new-view";
 import { SuministroNewView } from "./views/suministro-new-view";
 import { SuministroMetersView } from "./views/suministro-meters-view";
 import { TarifaNewView } from "./views/tarifa-new-view";
+import { TarifaEditView } from "./views/tarifa-edit-view";
 import { LecturaNewView } from "./views/lectura-new-view";
 import { FacturaNewView } from "./views/factura-new-view";
 import { FacturaDetailView } from "./views/factura-detail-view";
@@ -21,6 +22,7 @@ export const VIEW_REGISTRY: Record<string, ComponentType<ViewComponentProps>> = 
   "suministro.new": SuministroNewView,
   "suministro.meters": SuministroMetersView,
   "tarifa.new": TarifaNewView,
+  "tarifa.edit": TarifaEditView,
   "lectura.new": LecturaNewView,
   "factura.new": FacturaNewView,
   "factura.detail": FacturaDetailView,
