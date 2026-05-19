@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
-import { Activity, Building2, CreditCard, LayoutDashboard, LayoutGrid, ListTree, Loader2, LogOut, PanelLeftClose, PanelLeftOpen, Receipt } from "lucide-react";
+import { Activity, Building2, CreditCard, LayoutDashboard, LayoutGrid, ListTree, Loader2, LogOut, PanelLeftClose, PanelLeftOpen, Receipt, Settings } from "lucide-react";
 import { getActingTenantId } from "@/lib/acting-tenant";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -67,6 +67,7 @@ function SuperLayoutRoute() {
     { label: "Eventos", to: "/super/eventos", icon: ListTree },
     { label: "Health", to: "/super/health", icon: Activity },
     { label: "Facturación", to: "/super/facturacion", icon: CreditCard },
+    { label: "Configuración", to: "/super/configuracion", icon: Settings },
   ] as const;
 
   return (
