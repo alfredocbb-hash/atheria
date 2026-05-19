@@ -31,10 +31,11 @@ function ClientPortal() {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (auth.isAdminOrOperator && !auth.hasRole("client")) {
+    if (auth.isLoading || !auth.rolesLoaded) return;
+    if (auth.isAdminOrOperator && !auth.roles.includes("client")) {
       navigate({ to: "/admin", replace: true });
     }
-  }, [auth, navigate]);
+  }, [auth.isLoading, auth.rolesLoaded, auth.isAdminOrOperator, auth.roles, navigate]);
 
   const supplies = data?.supplies ?? [];
   const pending = invoices.filter((i: any) => Number(i.balance) > 0 && i.status !== "void");
