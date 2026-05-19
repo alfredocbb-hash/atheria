@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Building2, CreditCard, FileText, Gauge, LayoutDashboard, LogOut, Receipt, Server, ShieldCheck, Users, Wallet, Wrench, X } from "lucide-react";
+import { Building2, CreditCard, FileText, Gauge, LayoutDashboard, LogOut, PanelLeftClose, PanelLeftOpen, Receipt, Server, ShieldCheck, Users, Wallet, Wrench, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,11 +13,24 @@ import { SubscriptionGate, SubscriptionGuard } from "@/components/billing/subscr
 import { useIsSuperAdmin } from "@/hooks/use-super-admin";
 import { clearActingTenant, getActingTenantId, getActingTenantName } from "@/lib/acting-tenant";
 
+const SIDEBAR_KEY = "atheria.sidebar.collapsed";
+
 export function AdminPortalLayout({ children }: { children?: React.ReactNode }) {
   const auth = useAuth();
   const sa = useIsSuperAdmin();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(SIDEBAR_KEY) === "1";
+  });
+  const toggleSidebar = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try { window.localStorage.setItem(SIDEBAR_KEY, next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
   const [acting, setActing] = useState<{ id: string | null; name: string | null }>(() => ({
     id: typeof window !== "undefined" ? getActingTenantId() : null,
     name: typeof window !== "undefined" ? getActingTenantName() : null,
@@ -41,8 +54,8 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
   const NAV: Array<{ label: string; icon: any; to?: string; enabled: boolean; adminOnly?: boolean }> = [
     { label: "Dashboard", icon: LayoutDashboard, to: "/admin", enabled: true },
     { label: "Usuarios y Roles", icon: ShieldCheck, to: "/admin/usuarios", enabled: true, adminOnly: true },
-    { label: "Socios", icon: Users, to: "/admin/socios", enabled: true },
-    { label: "Suministros", icon: Gauge, to: "/admin/suministros", enabled: true },
+    { label: "Clientes", icon: Users, to: "/admin/socios", enabled: true },
+    { label: "Servicios", icon: Gauge, to: "/admin/suministros", enabled: true },
     { label: "Facturación", icon: Receipt, to: "/admin/facturacion", enabled: true },
     { label: "Tarifas", icon: Wallet, to: "/admin/tarifas", enabled: true },
     { label: "Reclamos", icon: Wrench, to: "/admin/reclamos", enabled: true },
@@ -52,37 +65,57 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
   return (
     <div className="flex min-h-screen bg-secondary/40">
       <aside
-        className="hidden w-64 shrink-0 flex-col text-sidebar-foreground md:flex"
+        className={cn(
+          "hidden shrink-0 flex-col text-sidebar-foreground transition-[width] duration-200 md:flex",
+          collapsed ? "w-16" : "w-64",
+        )}
         style={{ background: "var(--gradient-sidebar)", borderRight: "1px solid color-mix(in oklab, var(--brand-cyan) 18%, transparent)" }}
       >
-        <div className="flex items-center gap-3 border-b border-white/5 px-5 py-5">
+        <div className={cn("flex items-center gap-3 border-b border-white/5 py-5", collapsed ? "justify-center px-2" : "px-5")}>
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-md text-white shadow-[0_4px_14px_-4px_rgba(91,200,230,0.55)]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-white shadow-[0_4px_14px_-4px_rgba(91,200,230,0.55)]"
             style={{ background: "var(--gradient-accent)" }}
           >
             <Building2 className="h-4 w-4" />
           </div>
-          <div className="leading-tight">
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/55">Atheria</p>
-            <p className="font-display text-sm font-semibold tracking-wide text-white">Backoffice</p>
-          </div>
+          {!collapsed && (
+            <div className="leading-tight flex-1 min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/55">Atheria</p>
+              <p className="font-display text-sm font-semibold tracking-wide text-white">Backoffice</p>
+            </div>
+          )}
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="rounded-md p-1.5 text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white"
+              title="Colapsar menú"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <nav className="flex-1 space-y-0.5 p-3">
-          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Operación</p>
+          {!collapsed && (
+            <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Operación</p>
+          )}
           {NAV.map((item) => {
             const Icon = item.icon;
             const base =
-              "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200";
+              cn(
+                "group relative flex items-center gap-3 rounded-md py-2 text-sm font-medium transition-colors duration-200",
+                collapsed ? "justify-center px-2" : "px-3",
+              );
             if (item.adminOnly && !auth.hasRole("admin")) return null;
             if (!item.enabled) {
               return (
                 <span
                   key={item.label}
                   className={cn(base, "cursor-not-allowed text-white/30")}
-                  title="Disponible en próximas fases"
+                  title={collapsed ? item.label : "Disponible en próximas fases"}
                 >
                   <Icon className="h-4 w-4" />
-                  {item.label}
+                  {!collapsed && item.label}
                 </span>
               );
             }
@@ -90,6 +123,7 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
               <Link
                 key={item.label}
                 to={item.to!}
+                title={collapsed ? item.label : undefined}
                 className={cn(
                   base,
                   "text-white/75 hover:bg-white/[0.06] hover:text-white [&_svg]:text-white/60 [&_svg]:hover:text-[var(--brand-cyan)]",
@@ -100,30 +134,46 @@ export function AdminPortalLayout({ children }: { children?: React.ReactNode }) 
                 }}
               >
                 <Icon className="h-4 w-4 transition-colors" />
-                {item.label}
+                {!collapsed && item.label}
               </Link>
             );
           })}
         </nav>
         <div className="border-t border-white/5 p-3">
-          <p className="truncate px-2 pb-2 text-[11px] text-white/55">{auth.user?.email}</p>
+          {!collapsed && (
+            <p className="truncate px-2 pb-2 text-[11px] text-white/55">{auth.user?.email}</p>
+          )}
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start text-white/80 hover:bg-white/[0.06] hover:text-white"
+            className={cn(
+              "w-full text-white/80 hover:bg-white/[0.06] hover:text-white",
+              collapsed ? "justify-center px-0" : "justify-start",
+            )}
             onClick={() => auth.signOut()}
+            title={collapsed ? "Cerrar sesión" : undefined}
           >
-            <LogOut className="mr-2 h-4 w-4" />
-            Cerrar sesión
+            <LogOut className={cn("h-4 w-4", !collapsed && "mr-2")} />
+            {!collapsed && "Cerrar sesión"}
           </Button>
         </div>
       </aside>
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border/60 bg-card/75 px-6 py-3 backdrop-blur-md supports-[backdrop-filter]:bg-card/60">
-          <Link to="/admin" className="flex items-center gap-2 md:invisible">
-            <Building2 className="h-5 w-5 text-accent" />
-            <span className="font-display text-sm font-semibold tracking-wide">Atheria</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              className="hidden rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:inline-flex"
+              title={collapsed ? "Expandir menú" : "Colapsar menú"}
+            >
+              {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </button>
+            <Link to="/admin" className="flex items-center gap-2 md:hidden">
+              <Building2 className="h-5 w-5 text-accent" />
+              <span className="font-display text-sm font-semibold tracking-wide">Atheria</span>
+            </Link>
+          </div>
           <div className="flex items-center gap-2">
             {sa.data?.isSuperAdmin && acting.id && (
               <div className="mr-1 inline-flex items-center gap-1.5 rounded-full border border-[color:var(--brand-cyan)]/40 bg-[color:var(--brand-cyan)]/10 px-2.5 py-1 text-xs font-medium text-[color:var(--brand-cyan)]">

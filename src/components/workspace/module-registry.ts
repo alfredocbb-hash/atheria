@@ -60,14 +60,14 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDef> = {
   },
   socios: {
     key: "socios",
-    title: "Socios",
+    title: "Clientes",
     icon: Users,
     routeTo: "/admin/socios",
     Component: SociosPage,
   },
   suministros: {
     key: "suministros",
-    title: "Suministros",
+    title: "Servicios",
     icon: Gauge,
     routeTo: "/admin/suministros",
     Component: SuministrosPage,

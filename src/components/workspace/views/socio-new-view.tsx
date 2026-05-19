@@ -54,17 +54,17 @@ export function SocioNewView({ tabId, payload }: ViewComponentProps) {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Padrones · Socios</p>
-        <h1 className="text-2xl font-semibold tracking-tight">{editing ? `Editar socio · ${editing.full_name}` : "Nuevo socio"}</h1>
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Padrones · Clientes</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{editing ? `Editar cliente · ${editing.full_name}` : "Nuevo cliente"}</h1>
       </div>
       <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-base">Datos del socio</CardTitle></CardHeader>
+        <CardHeader className="pb-3"><CardTitle className="text-base">Datos del cliente</CardTitle></CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={onSubmit} className="space-y-3 max-w-2xl">
               <div className="grid grid-cols-2 gap-3">
                 <FormField control={form.control} name="member_number" render={({ field }) => (
-                  <FormItem><FormLabel>N° socio</FormLabel><FormControl><Input {...field} disabled={!!editing} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>N° cliente</FormLabel><FormControl><Input {...field} disabled={!!editing} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="document_id" render={({ field }) => (
                   <FormItem><FormLabel>Documento</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
@@ -95,7 +95,7 @@ export function SocioNewView({ tabId, payload }: ViewComponentProps) {
               )} />
               <div className="flex gap-2 pt-2">
                 <Button type="submit" disabled={pending}>
-                  {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editing ? "Guardar cambios" : "Crear socio"}
+                  {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{editing ? "Guardar cambios" : "Crear cliente"}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => ws.closeTab(tabId)}>Cancelar</Button>
               </div>

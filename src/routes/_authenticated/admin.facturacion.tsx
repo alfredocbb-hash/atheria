@@ -50,7 +50,7 @@ function ReadingsTab() {
         {isLoading ? <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /> : (
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Fecha</TableHead><TableHead>Suministro</TableHead><TableHead>Medidor</TableHead>
+              <TableHead>Fecha</TableHead><TableHead>Servicio</TableHead><TableHead>Medidor</TableHead>
               <TableHead className="text-right">Lectura</TableHead><TableHead className="text-right">Consumo</TableHead><TableHead>Origen</TableHead><TableHead></TableHead>
             </TableRow></TableHeader>
             <TableBody>
@@ -107,7 +107,7 @@ function InvoicesTab() {
         {isLoading ? <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" /> : (
           <Table>
             <TableHeader><TableRow>
-              <TableHead>N°</TableHead><TableHead>Socio</TableHead><TableHead>Suministro</TableHead>
+              <TableHead>N°</TableHead><TableHead>Cliente</TableHead><TableHead>Servicio</TableHead>
               <TableHead>Período</TableHead><TableHead>Vence</TableHead>
               <TableHead className="text-right">Total</TableHead><TableHead className="text-right">Saldo</TableHead>
               <TableHead>Estado</TableHead><TableHead></TableHead>

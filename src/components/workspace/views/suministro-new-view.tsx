@@ -13,7 +13,7 @@ import type { ViewComponentProps } from "../dynamic-views";
 
 const Schema = z.object({
   supply_number: z.string().min(1).max(40),
-  member_id: z.string().uuid("Seleccioná un socio"),
+  member_id: z.string().uuid("Seleccioná un cliente"),
   service_type: z.enum(["water", "gas", "electricity"]),
   status: z.enum(["active", "suspended", "inactive", "pending"]),
   tariff_category: z.string().max(60).optional(),
@@ -48,20 +48,20 @@ export function SuministroNewView({ tabId }: ViewComponentProps) {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Padrones · Suministros</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Nuevo suministro</h1>
+        <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Padrones · Servicios</p>
+        <h1 className="text-2xl font-semibold tracking-tight">Nuevo servicio</h1>
       </div>
       <Card>
-        <CardHeader className="pb-3"><CardTitle className="text-base">Alta de suministro</CardTitle></CardHeader>
+        <CardHeader className="pb-3"><CardTitle className="text-base">Alta de servicio</CardTitle></CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={onSubmit} className="space-y-3 max-w-3xl">
               <div className="grid grid-cols-2 gap-3">
                 <FormField control={form.control} name="supply_number" render={({ field }) => (
-                  <FormItem><FormLabel>N° suministro</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem><FormLabel>N° servicio</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
                 <FormField control={form.control} name="service_type" render={({ field }) => (
-                  <FormItem><FormLabel>Servicio</FormLabel>
+                  <FormItem><FormLabel>Tipo de servicio</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
@@ -74,9 +74,9 @@ export function SuministroNewView({ tabId }: ViewComponentProps) {
                 )} />
               </div>
               <FormField control={form.control} name="member_id" render={({ field }) => (
-                <FormItem><FormLabel>Socio titular</FormLabel>
+                <FormItem><FormLabel>Cliente titular</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar socio…" /></SelectTrigger></FormControl>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar cliente…" /></SelectTrigger></FormControl>
                     <SelectContent>
                       {(members.data ?? []).map((m: any) => (
                         <SelectItem key={m.id} value={m.id}>{m.member_number} — {m.full_name}</SelectItem>
@@ -107,7 +107,7 @@ export function SuministroNewView({ tabId }: ViewComponentProps) {
                 <FormItem><FormLabel>Fecha de activación</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <div className="rounded-md border p-3 space-y-3">
-                <p className="text-sm font-medium">Dirección del suministro</p>
+                <p className="text-sm font-medium">Dirección del servicio</p>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2">
                     <FormField control={form.control} name="address.street" render={({ field }) => (
@@ -140,7 +140,7 @@ export function SuministroNewView({ tabId }: ViewComponentProps) {
               </div>
               <div className="flex gap-2 pt-2">
                 <Button type="submit" disabled={create.isPending}>
-                  {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Crear suministro
+                  {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Crear servicio
                 </Button>
                 <Button type="button" variant="outline" onClick={() => ws.closeTab(tabId)}>Cancelar</Button>
               </div>

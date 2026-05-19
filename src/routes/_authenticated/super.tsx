@@ -1,11 +1,13 @@
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
 import * as React from "react";
-import { Activity, Building2, CreditCard, LayoutDashboard, LayoutGrid, ListTree, Loader2, LogOut, Receipt } from "lucide-react";
+import { Activity, Building2, CreditCard, LayoutDashboard, LayoutGrid, ListTree, Loader2, LogOut, PanelLeftClose, PanelLeftOpen, Receipt } from "lucide-react";
 import { getActingTenantId } from "@/lib/acting-tenant";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsSuperAdmin } from "@/hooks/use-super-admin";
 import { cn } from "@/lib/utils";
+
+const SIDEBAR_KEY = "atheria.sidebar.super.collapsed";
 
 export const Route = createFileRoute("/_authenticated/super")({
   head: () => ({ meta: [{ title: "Plataforma — Sistema de Gestión de Servicios" }] }),
@@ -17,6 +19,17 @@ function SuperLayoutRoute() {
   const navigate = useNavigate();
   const sa = useIsSuperAdmin();
   const [hasActing, setHasActing] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(SIDEBAR_KEY) === "1";
+  });
+  const toggleSidebar = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try { window.localStorage.setItem(SIDEBAR_KEY, next ? "1" : "0"); } catch {}
+      return next;
+    });
+  };
   React.useEffect(() => {
     const sync = () => setHasActing(!!getActingTenantId());
     sync();
@@ -55,31 +68,48 @@ function SuperLayoutRoute() {
   return (
     <div className="flex min-h-screen bg-secondary/40">
       <aside
-        className="hidden w-64 shrink-0 flex-col text-sidebar-foreground md:flex"
+        className={cn(
+          "hidden shrink-0 flex-col text-sidebar-foreground transition-[width] duration-200 md:flex",
+          collapsed ? "w-16" : "w-64",
+        )}
         style={{ background: "var(--gradient-sidebar)", borderRight: "1px solid color-mix(in oklab, var(--brand-cyan) 18%, transparent)" }}
       >
-        <div className="flex items-center gap-3 border-b border-white/5 px-5 py-5">
+        <div className={cn("flex items-center gap-3 border-b border-white/5 py-5", collapsed ? "justify-center px-2" : "px-5")}>
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-md text-white shadow-[0_4px_14px_-4px_rgba(91,200,230,0.55)]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-white shadow-[0_4px_14px_-4px_rgba(91,200,230,0.55)]"
             style={{ background: "var(--gradient-accent)" }}
           >
             <Receipt className="h-4 w-4" />
           </div>
-          <div className="leading-tight">
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/55">Atheria</p>
-            <p className="font-display text-sm font-semibold tracking-wide text-white">Plataforma</p>
-          </div>
+          {!collapsed && (
+            <div className="leading-tight flex-1 min-w-0">
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/55">Atheria</p>
+              <p className="font-display text-sm font-semibold tracking-wide text-white">Plataforma</p>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="rounded-md p-1.5 text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white"
+            title={collapsed ? "Expandir menú" : "Colapsar menú"}
+          >
+            {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </button>
         </div>
         <nav className="flex-1 space-y-0.5 p-3">
-          <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Super admin</p>
+          {!collapsed && (
+            <p className="px-3 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/40">Super admin</p>
+          )}
           {NAV.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.to}
                 to={item.to}
+                title={collapsed ? item.label : undefined}
                 className={cn(
-                  "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-white/75 transition-colors duration-200 hover:bg-white/[0.06] hover:text-white [&_svg]:text-white/60 [&_svg]:hover:text-[var(--brand-cyan)]",
+                  "group relative flex items-center gap-3 rounded-md py-2 text-sm font-medium text-white/75 transition-colors duration-200 hover:bg-white/[0.06] hover:text-white [&_svg]:text-white/60 [&_svg]:hover:text-[var(--brand-cyan)]",
+                  collapsed ? "justify-center px-2" : "px-3",
                 )}
                 activeProps={{
                   className:
@@ -87,11 +117,11 @@ function SuperLayoutRoute() {
                 }}
               >
                 <Icon className="h-4 w-4 transition-colors" />
-                {item.label}
+                {!collapsed && item.label}
               </Link>
             );
           })}
-          {hasActing && (
+          {hasActing && !collapsed && (
             <Link
               to="/admin"
               className="mt-6 flex items-center gap-3 rounded-md border border-[color:var(--brand-cyan)]/30 px-3 py-2 text-sm font-medium text-[color:var(--brand-cyan)] transition-colors hover:bg-[color:var(--brand-cyan)]/10"
@@ -100,16 +130,31 @@ function SuperLayoutRoute() {
               Volver al backoffice
             </Link>
           )}
+          {hasActing && collapsed && (
+            <Link
+              to="/admin"
+              title="Volver al backoffice"
+              className="mt-6 flex items-center justify-center rounded-md border border-[color:var(--brand-cyan)]/30 px-2 py-2 text-[color:var(--brand-cyan)] transition-colors hover:bg-[color:var(--brand-cyan)]/10"
+            >
+              <CreditCard className="h-4 w-4" />
+            </Link>
+          )}
         </nav>
         <div className="border-t border-white/5 p-3">
-          <p className="truncate px-2 pb-2 text-[11px] text-white/55">{auth.user?.email}</p>
+          {!collapsed && (
+            <p className="truncate px-2 pb-2 text-[11px] text-white/55">{auth.user?.email}</p>
+          )}
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-start text-white/80 hover:bg-white/[0.06] hover:text-white"
+            className={cn(
+              "w-full text-white/80 hover:bg-white/[0.06] hover:text-white",
+              collapsed ? "justify-center px-0" : "justify-start",
+            )}
             onClick={() => auth.signOut()}
+            title={collapsed ? "Cerrar sesión" : undefined}
           >
-            <LogOut className="mr-2 h-4 w-4" /> Cerrar sesión
+            <LogOut className={cn("h-4 w-4", !collapsed && "mr-2")} /> {!collapsed && "Cerrar sesión"}
           </Button>
         </div>
       </aside>
