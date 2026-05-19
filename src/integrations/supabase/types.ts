@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          created_at: string
+          default_billing_day: number | null
+          default_first_due_day: number | null
+          default_interest_after_first: number | null
+          default_interest_after_second: number | null
+          default_second_due_day: number | null
+          id: number
+          platform_name: string | null
+          privacy_url: string | null
+          support_email: string | null
+          support_phone: string | null
+          support_whatsapp: string | null
+          terms_url: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          default_billing_day?: number | null
+          default_first_due_day?: number | null
+          default_interest_after_first?: number | null
+          default_interest_after_second?: number | null
+          default_second_due_day?: number | null
+          id?: number
+          platform_name?: string | null
+          privacy_url?: string | null
+          support_email?: string | null
+          support_phone?: string | null
+          support_whatsapp?: string | null
+          terms_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          default_billing_day?: number | null
+          default_first_due_day?: number | null
+          default_interest_after_first?: number | null
+          default_interest_after_second?: number | null
+          default_second_due_day?: number | null
+          id?: number
+          platform_name?: string | null
+          privacy_url?: string | null
+          support_email?: string | null
+          support_phone?: string | null
+          support_whatsapp?: string | null
+          terms_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: string
@@ -1052,6 +1106,95 @@ export type Database = {
             foreignKeyName: "tenant_members_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_settings: {
+        Row: {
+          billing_day: number | null
+          cesp_code: string | null
+          created_at: string
+          cuit: string | null
+          email: string | null
+          email_collections: string | null
+          email_inquiries: string | null
+          email_services: string | null
+          first_due_day: number | null
+          fiscal_address: string | null
+          iibb: string | null
+          interest_rate_after_first: number | null
+          interest_rate_after_second: number | null
+          legal_address: string | null
+          legal_name: string | null
+          phone_main: string | null
+          phone_mobile: string | null
+          second_due_day: number | null
+          tenant_id: string
+          trade_name: string | null
+          updated_at: string
+          updated_by: string | null
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          billing_day?: number | null
+          cesp_code?: string | null
+          created_at?: string
+          cuit?: string | null
+          email?: string | null
+          email_collections?: string | null
+          email_inquiries?: string | null
+          email_services?: string | null
+          first_due_day?: number | null
+          fiscal_address?: string | null
+          iibb?: string | null
+          interest_rate_after_first?: number | null
+          interest_rate_after_second?: number | null
+          legal_address?: string | null
+          legal_name?: string | null
+          phone_main?: string | null
+          phone_mobile?: string | null
+          second_due_day?: number | null
+          tenant_id: string
+          trade_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          billing_day?: number | null
+          cesp_code?: string | null
+          created_at?: string
+          cuit?: string | null
+          email?: string | null
+          email_collections?: string | null
+          email_inquiries?: string | null
+          email_services?: string | null
+          first_due_day?: number | null
+          fiscal_address?: string | null
+          iibb?: string | null
+          interest_rate_after_first?: number | null
+          interest_rate_after_second?: number | null
+          legal_address?: string | null
+          legal_name?: string | null
+          phone_main?: string | null
+          phone_mobile?: string | null
+          second_due_day?: number | null
+          tenant_id?: string
+          trade_name?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
