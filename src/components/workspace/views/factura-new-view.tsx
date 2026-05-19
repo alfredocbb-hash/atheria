@@ -67,12 +67,12 @@ export function FacturaNewView({ tabId }: ViewComponentProps) {
         <CardContent className="pt-6">
           <div className="space-y-3 max-w-2xl">
             <div>
-              <Label>Socio</Label>
+              <Label>Cliente</Label>
               <Select
                 value={form.member_id}
                 onValueChange={(v) => setForm({ ...form, member_id: v, supply_id: "" })}
               >
-                <SelectTrigger><SelectValue placeholder="Elegir socio…" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Elegir cliente…" /></SelectTrigger>
                 <SelectContent>
                   {members.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
@@ -83,7 +83,7 @@ export function FacturaNewView({ tabId }: ViewComponentProps) {
               </Select>
             </div>
             <div>
-              <Label>Servicio / Suministro</Label>
+              <Label>Servicio</Label>
               <Select
                 value={form.supply_id}
                 onValueChange={(v) => setForm({ ...form, supply_id: v })}
@@ -93,9 +93,9 @@ export function FacturaNewView({ tabId }: ViewComponentProps) {
                   <SelectValue
                     placeholder={
                       !form.member_id
-                        ? "Elegí primero un socio"
+                        ? "Elegí primero un cliente"
                         : memberSupplies.length === 0
-                        ? "Este socio no tiene suministros"
+                        ? "Este cliente no tiene servicios"
                         : "Elegir servicio…"
                     }
                   />
@@ -111,7 +111,7 @@ export function FacturaNewView({ tabId }: ViewComponentProps) {
               </Select>
               {form.member_id && memberSupplies.length === 0 && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Este socio no tiene suministros cargados. Cargá uno desde el ABM de suministros.
+                  Este cliente no tiene servicios cargados. Cargá uno desde el ABM de servicios.
                 </p>
               )}
             </div>
