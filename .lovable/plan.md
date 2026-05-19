@@ -1,83 +1,93 @@
-# Módulo de Configuración
 
-Plan para configuración por **tenant** (cooperativa) y configuración **global** (super admin).
+# Plan: Gestión de usuarios y permisos para el Super Admin
+
+Dos features unificadas en un nuevo módulo del portal super: **Usuarios** y **Permisos por módulo**.
+
+---
 
 ## 1. Base de datos
 
-### Tabla `tenant_settings` (1:1 con `tenants`)
-Parámetros del sistema + datos de la empresa de cada cooperativa.
+### Catálogo de módulos (extensible)
+Tabla `app_modules` — fuente única de verdad. Cuando se agregue un módulo nuevo, se inserta aquí y aparece automáticamente en la matriz.
 
-Campos:
-- `tenant_id` (PK, FK a tenants)
-- **Parámetros del sistema:**
-  - `billing_day` (int 1–31) — día de facturación
-  - `first_due_day` (int 1–31) — primer vencimiento
-  - `second_due_day` (int 1–31) — segundo vencimiento
-  - `interest_rate_after_first` (numeric) — % interés diario tras 1er venc.
-  - `interest_rate_after_second` (numeric) — % interés diario tras 2do venc.
-  - `cesp_code` (text) — código CESP
-- **Datos de la empresa:**
-  - `legal_name`, `cuit`, `trade_name`
-  - `legal_address`, `fiscal_address`
-  - `email`, `phone_main`, `phone_mobile`, `whatsapp`, `website`
-  - `email_services`, `email_inquiries`, `email_collections`
-  - `iibb`
-- `updated_at`, `updated_by`
+- `key` (text, PK) — ej. `facturacion`, `reclamos`, `configuracion`
+- `title` (text), `description` (text), `category` (text: `tenant` | `super` | `client`)
+- `is_active` (bool), `sort_order` (int)
 
-**RLS:**
-- SELECT: super admin, o miembros del tenant (admin/operador/user) del propio tenant
-- UPDATE/INSERT: super admin, o admin del tenant
-- Trigger `touch_updated_at`
+Se siembra inicialmente con los módulos actuales del `module-registry.ts` (dashboard, usuarios, socios, suministros, facturacion, tarifas, reclamos, auditoria, configuracion) + los del portal super (tenants, planes, eventos, health, configuracion) + los del cliente.
 
-### Tabla `app_settings` (singleton global)
-Configuración global del super admin (marca SaaS, soporte, defaults).
+### Matriz de permisos global (defaults)
+Tabla `module_role_permissions`:
+- `module_key` → `app_modules.key`
+- `role_scope` (`app_role` | `tenant_role`) — para distinguir las dos jerarquías
+- `role` (text) — `admin/operator/client` o `admin/operador/user`
+- `enabled` (bool)
+- PK: (`module_key`, `role_scope`, `role`)
 
-Campos sugeridos:
-- `id` (singleton, check id = 1)
-- `platform_name`, `support_email`, `support_phone`, `support_whatsapp`
-- `default_billing_day`, `default_first_due_day`, `default_second_due_day`
-- `default_interest_after_first`, `default_interest_after_second`
-- `terms_url`, `privacy_url`
-- `updated_at`, `updated_by`
+### Overrides por cooperativa
+Tabla `tenant_module_role_permissions`:
+- `tenant_id`, `module_key`, `role_scope`, `role`, `enabled`
+- PK compuesta. Si no hay fila → se usa el default global.
 
-**RLS:** SELECT autenticados; UPDATE solo super admin.
+### Función helper
+`public.can_access_module(_user uuid, _tenant uuid, _module text) returns bool` — security definer, resuelve override de tenant → default global → false. Se usa desde el frontend y opcionalmente desde RLS en el futuro.
 
-## 2. UI Tenant — `/admin/configuracion`
+RLS:
+- `app_modules`: SELECT autenticados; ALL solo super admin.
+- `module_role_permissions` y `tenant_module_role_permissions`: SELECT autenticados; ALL solo super admin.
 
-Nueva ruta `src/routes/_authenticated/admin.configuracion.tsx` con dos tabs (shadcn `Tabs`):
+---
 
-1. **Parámetros del sistema** — formulario con los 6 campos numéricos/texto, validados con zod (días 1–31, % ≥ 0).
-2. **Datos de la empresa** — formulario agrupado en secciones: Identificación (razón social, CUIT, nombre fantasía, IIBB), Domicilios, Contacto, Emails operativos.
+## 2. Server functions (`src/lib/super-users.functions.ts`)
 
-Patrón: `react-hook-form` + `zodResolver`, `useQuery` para leer, `useMutation` para guardar. Toast de éxito/error.
+Todas con `requireSupabaseAuth` + chequeo `is_super_admin()`:
 
-Agregar entrada "Configuración" en el menú lateral del admin.
+- `createUserWithRole({ email, password, full_name, app_role? })` — usa `supabaseAdmin.auth.admin.createUser` + insert en `user_roles`.
+- `assignTenantMembership({ user_id, tenant_id, role })` — insert/update en `tenant_members`.
+- `removeTenantMembership({ user_id, tenant_id })`.
+- `listAllUsers({ search })` — join de `profiles` + `user_roles` + `tenant_members` + `super_admins`.
+- `listModules()` / `listGlobalPermissions()` / `listTenantPermissions(tenant_id)`.
+- `setGlobalPermission({ module_key, role_scope, role, enabled })` — upsert.
+- `setTenantPermission({ tenant_id, module_key, role_scope, role, enabled | null })` — upsert; `null` = limpiar override.
 
-## 3. UI Super Admin — `/super/configuracion`
+Auditoría: cada cambio registra `log_audit('permissions.changed' | 'user.created' | ...)`.
 
-Nueva ruta `src/routes/_authenticated/super.configuracion.tsx` con dos tabs:
+---
 
-1. **Plataforma** — edita `app_settings` (nombre, contactos de soporte, defaults, URLs legales).
-2. **Configuración por cooperativa** — selector de tenant + reutiliza el mismo formulario que el tenant (mismos componentes) para editar `tenant_settings` de cualquier cooperativa.
+## 3. UI Super Admin — nuevo `/super/usuarios`
 
-Agregar entrada "Configuración" en el menú del super admin.
+Pestañas:
+1. **Usuarios** — tabla con buscador, roles globales (badges), tenants donde es miembro. Acciones:
+   - Crear usuario (dialog: email, password, nombre, checkbox de roles globales).
+   - Asignar/quitar rol global (`admin`/`operator`/`client`).
+   - Asignar membresía a tenant (selector de tenant + rol).
+   - Marcar/desmarcar super admin.
+2. **Permisos globales** — matriz checkbox:
+   - Sub-tab "Roles globales" (filas: módulos, columnas: admin/operator/client).
+   - Sub-tab "Roles de tenant" (filas: módulos, columnas: admin/operador/user).
+3. **Permisos por cooperativa** — selector de tenant + misma matriz; cada celda muestra el default global y permite override (estados: hereda ✓, hereda ✗, override ✓, override ✗, botón "limpiar").
 
-## 4. Componentes compartidos
+Hooks nuevos en `src/hooks/use-super-users.ts` y `src/hooks/use-permissions.ts` con React Query.
 
-- `src/components/settings/SystemParamsForm.tsx`
-- `src/components/settings/CompanyInfoForm.tsx`
-- `src/components/settings/PlatformSettingsForm.tsx`
-- `src/hooks/use-tenant-settings.ts` y `use-app-settings.ts`
+---
 
-Validaciones zod compartidas en `src/lib/settings-schemas.ts` (CUIT 11 dígitos, email válido, URL válida, teléfonos, % entre 0–100, días 1–31).
+## 4. Integración con el sistema de módulos existente
+
+- `src/components/workspace/module-registry.ts` ya define los módulos del admin. Se agrega un campo opcional `permissionKey` (default = `key`) y se sincroniza con `app_modules`.
+- En `admin-portal-layout` y `super.tsx`, los ítems de menú se filtran usando `can_access_module(user, tenant, module)` vía un hook `useModuleAccess()` que cachea la respuesta.
+- Cuando se cree un módulo nuevo en el futuro: basta con agregarlo al `module-registry.ts` **y** insertar la fila en `app_modules` (se puede automatizar con un seed/migration helper o un botón "Sincronizar módulos" en el super que detecta los que faltan).
+
+---
 
 ## 5. Detalles técnicos
 
-- Lecturas desde el navegador con `supabase` (RLS aplica) — no requiere server function.
-- Al crear un nuevo tenant, insertar fila default en `tenant_settings` (trigger o al momento del onboarding).
-- Seed de `app_settings` con un INSERT inicial id=1.
-- No tocar `routeTree.gen.ts` ni archivos preconfigurados.
+- Toda la UI de matriz usa `<Checkbox>` de shadcn con mutaciones optimistas.
+- Validación con zod en server functions (`email`, `password >= 8`, roles enum, etc.).
+- No se modifican archivos preconfigurados (`client.ts`, `types.ts`, `routeTree.gen.ts`).
+- El menú lateral del super admin recibe entrada **Usuarios** (icono `Users`) y el de Configuración global gana una pestaña adicional opcional "Módulos" (catálogo de `app_modules` por si se quiere renombrar / desactivar uno).
 
 ## Fuera de alcance
-- Aplicar automáticamente fechas/intereses al motor de facturación (se integra después).
-- Logo/branding por tenant (puede añadirse luego si se necesita).
+
+- Enforcement automático en RLS de cada tabla de negocio (queda como evolución; por ahora `can_access_module` se usa para mostrar/ocultar UI y como guard en server functions críticas).
+- Invitaciones por email / magic link (se puede sumar luego).
+- Permisos a nivel acción (ver/crear/editar/borrar) — esta iteración es a nivel módulo.
