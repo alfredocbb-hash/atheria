@@ -37,6 +37,7 @@ import { Route as AuthenticatedAdminSociosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminReclamosRouteImport } from './routes/_authenticated/admin.reclamos'
 import { Route as AuthenticatedAdminFacturacionSuscripcionRouteImport } from './routes/_authenticated/admin.facturacion-suscripcion'
 import { Route as AuthenticatedAdminFacturacionRouteImport } from './routes/_authenticated/admin.facturacion'
+import { Route as AuthenticatedAdminConfiguracionRouteImport } from './routes/_authenticated/admin.configuracion'
 import { Route as AuthenticatedAdminAuditoriaRouteImport } from './routes/_authenticated/admin.auditoria'
 import { Route as ApiPublicBillingWebhookProviderRouteImport } from './routes/api/public/billing-webhook.$provider'
 
@@ -191,6 +192,12 @@ const AuthenticatedAdminFacturacionRoute =
     path: '/facturacion',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminConfiguracionRoute =
+  AuthenticatedAdminConfiguracionRouteImport.update({
+    id: '/configuracion',
+    path: '/configuracion',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminAuditoriaRoute =
   AuthenticatedAdminAuditoriaRouteImport.update({
     id: '/auditoria',
@@ -219,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/super': typeof AuthenticatedSuperRouteWithChildren
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/admin/configuracion': typeof AuthenticatedAdminConfiguracionRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
@@ -248,6 +256,7 @@ export interface FileRoutesByTo {
   '/cliente': typeof AuthenticatedClienteRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/admin/configuracion': typeof AuthenticatedAdminConfiguracionRoute
   '/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
@@ -281,6 +290,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/super': typeof AuthenticatedSuperRouteWithChildren
   '/_authenticated/admin/auditoria': typeof AuthenticatedAdminAuditoriaRoute
+  '/_authenticated/admin/configuracion': typeof AuthenticatedAdminConfiguracionRoute
   '/_authenticated/admin/facturacion': typeof AuthenticatedAdminFacturacionRoute
   '/_authenticated/admin/facturacion-suscripcion': typeof AuthenticatedAdminFacturacionSuscripcionRoute
   '/_authenticated/admin/reclamos': typeof AuthenticatedAdminReclamosRoute
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/super'
     | '/admin/auditoria'
+    | '/admin/configuracion'
     | '/admin/facturacion'
     | '/admin/facturacion-suscripcion'
     | '/admin/reclamos'
@@ -343,6 +354,7 @@ export interface FileRouteTypes {
     | '/cliente'
     | '/onboarding'
     | '/admin/auditoria'
+    | '/admin/configuracion'
     | '/admin/facturacion'
     | '/admin/facturacion-suscripcion'
     | '/admin/reclamos'
@@ -375,6 +387,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/super'
     | '/_authenticated/admin/auditoria'
+    | '/_authenticated/admin/configuracion'
     | '/_authenticated/admin/facturacion'
     | '/_authenticated/admin/facturacion-suscripcion'
     | '/_authenticated/admin/reclamos'
@@ -604,6 +617,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFacturacionRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/configuracion': {
+      id: '/_authenticated/admin/configuracion'
+      path: '/configuracion'
+      fullPath: '/admin/configuracion'
+      preLoaderRoute: typeof AuthenticatedAdminConfiguracionRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/auditoria': {
       id: '/_authenticated/admin/auditoria'
       path: '/auditoria'
@@ -623,6 +643,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAuditoriaRoute: typeof AuthenticatedAdminAuditoriaRoute
+  AuthenticatedAdminConfiguracionRoute: typeof AuthenticatedAdminConfiguracionRoute
   AuthenticatedAdminFacturacionRoute: typeof AuthenticatedAdminFacturacionRoute
   AuthenticatedAdminFacturacionSuscripcionRoute: typeof AuthenticatedAdminFacturacionSuscripcionRoute
   AuthenticatedAdminReclamosRoute: typeof AuthenticatedAdminReclamosRoute
@@ -635,6 +656,7 @@ interface AuthenticatedAdminRouteChildren {
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAuditoriaRoute: AuthenticatedAdminAuditoriaRoute,
+  AuthenticatedAdminConfiguracionRoute: AuthenticatedAdminConfiguracionRoute,
   AuthenticatedAdminFacturacionRoute: AuthenticatedAdminFacturacionRoute,
   AuthenticatedAdminFacturacionSuscripcionRoute:
     AuthenticatedAdminFacturacionSuscripcionRoute,

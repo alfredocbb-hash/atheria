@@ -4,6 +4,7 @@ import {
   Gauge,
   LayoutDashboard,
   Receipt,
+  Settings,
   ShieldCheck,
   Users,
   Wallet,
@@ -19,6 +20,7 @@ import { FacturacionPage } from "@/routes/_authenticated/admin.facturacion";
 import { TarifasPage } from "@/routes/_authenticated/admin.tarifas";
 import { ReclamosPage } from "@/routes/_authenticated/admin.reclamos";
 import { AuditPage } from "@/routes/_authenticated/admin.auditoria";
+import { ConfiguracionPage } from "@/routes/_authenticated/admin.configuracion";
 
 export type ModuleKey =
   | "dashboard"
@@ -28,7 +30,8 @@ export type ModuleKey =
   | "facturacion"
   | "tarifas"
   | "reclamos"
-  | "auditoria";
+  | "auditoria"
+  | "configuracion";
 
 export interface ModuleDef {
   key: ModuleKey;
@@ -99,6 +102,14 @@ export const MODULE_REGISTRY: Record<ModuleKey, ModuleDef> = {
     icon: FileText,
     routeTo: "/admin/auditoria",
     Component: AuditPage,
+    adminOnly: true,
+  },
+  configuracion: {
+    key: "configuracion",
+    title: "Configuración",
+    icon: Settings,
+    routeTo: "/admin/configuracion",
+    Component: ConfiguracionPage,
     adminOnly: true,
   },
 };
