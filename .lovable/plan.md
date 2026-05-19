@@ -1,77 +1,95 @@
-## Problema
+## Nuevo tema "Atheria Tech" + menú y botones modernos
 
-El super admin `alfredocbb@gmail.com` (rol `admin` + `super_admin`, sin `tenant_members`) queda atrapado en `/super`:
+Refrescar la identidad visual a partir de los colores del logo (navy + azul tech + cyan + verde lima) y darle un tratamiento más tecnológico al sidebar, la barra superior y los botones. Se trabaja sobre tokens semánticos y variantes de componentes — no se reescribe ninguna ruta ni lógica.
 
-- `/admin` lo detecta como `isSuperAdmin && !hasTenant` y lo redirige a `/super`.
-- El link "Volver al backoffice" en `src/routes/_authenticated/super.tsx` lo manda a `/admin` → rebota a `/super`.
-- Aunque entrara, todas las RLS dependen de `current_tenant_id()`, que devuelve `NULL` para un usuario sin `tenant_members`, y los hooks del backoffice fallan.
+### Paleta extraída del logo
 
-## Solución: "Acceder como tenant" (impersonación desde /super)
-
-El super admin elige un tenant en `/super/tenants`, queda "actuando como" ese tenant, y el backoffice opera como si fuera miembro admin de esa cooperativa.
-
-### 1. Backend — overrideable `current_tenant_id()`
-
-Migración:
-
-- Modificar la función `public.current_tenant_id()` para que, si el caller es super admin, lea el tenant desde un GUC de sesión (`app.acting_tenant_id`). Si no hay GUC válido, cae al comportamiento actual (primer tenant_member).
-
-```sql
-CREATE OR REPLACE FUNCTION public.current_tenant_id()
-RETURNS uuid
-LANGUAGE plpgsql STABLE SECURITY DEFINER
-SET search_path = public AS $$
-DECLARE v uuid;
-BEGIN
-  IF public.is_super_admin() THEN
-    BEGIN
-      v := nullif(current_setting('app.acting_tenant_id', true), '')::uuid;
-    EXCEPTION WHEN others THEN v := NULL; END;
-    IF v IS NOT NULL THEN RETURN v; END IF;
-  END IF;
-  RETURN (SELECT tenant_id FROM public.tenant_members
-          WHERE user_id = auth.uid()
-          ORDER BY created_at ASC LIMIT 1);
-END$$;
+```text
+Navy profundo     #0B2340   fondo institucional, primary
+Navy medio        #173A5E   superficies elevadas
+Azul tech         #2E9CCB   acento principal interactivo
+Cyan brillante    #5BC8E6   focus rings, glow, highlights
+Verde lima        #8FD14F   activo / éxito / acento secundario
+Plata logo        #C6CED6   bordes sutiles
+Off-white frío    #F4F7FB   superficie clara
 ```
 
-- Nueva función `public.set_acting_tenant(uuid)` (`SECURITY DEFINER`) que valida `is_super_admin()` y hace `set_config('app.acting_tenant_id', $1::text, true)` (alcance de transacción).
+### 1. Tokens de diseño — `src/styles.css`
 
-### 2. Middleware — propagar tenant en cada request del super admin
+- **Light mode (`:root`)**: background off-white frío, `--primary` navy profundo, `--accent` azul tech, `--ring` cyan brillante, `--border` plata muy clara.
+- **Dark mode (`.dark`)**: background navy casi-negro, `--card` navy medio, `--primary` cyan brillante, `--accent` verde lima.
+- **Tokens de marca y gradientes (nuevos)**:
+  - `--brand-deep`, `--brand-blue`, `--brand-cyan`, `--brand-lime`
+  - `--gradient-brand`: navy → azul tech → cyan (diagonal 135°)
+  - `--gradient-accent`: azul tech → verde lima
+  - `--gradient-sidebar`: navy profundo → navy medio (vertical)
+  - `--shadow-glow`: halo cyan suave para hover
+  - `--shadow-elevated`: sombra fría para cards/menus
+- **Estados** (`--status-*`, `--priority-*`) recalibrados a la paleta.
+- **Charts** (`--chart-1..5`) recoloreados con navy/azul tech/cyan/lime/plata.
 
-`src/integrations/supabase/auth-middleware.ts` no se toca (es read-only auto-generado). En su lugar:
+### 2. Sidebar más tecnológico — `src/components/ui/sidebar.tsx` + layouts
 
-- Nuevo `src/lib/acting-tenant.ts` con helpers cliente para leer/escribir `localStorage["lovable.actingTenantId"]`.
-- Nuevo `src/integrations/supabase/acting-tenant-attacher.ts` (middleware `.client`) que, si hay valor en localStorage, agrega header `x-acting-tenant: <uuid>` a cada serverFn.
-- Registrar el attacher en `src/start.ts` junto a `attachSupabaseAuth` en `functionMiddleware`.
-- En cada serverFn que use `requireSupabaseAuth` y opere sobre datos de tenant, llamar `await supabase.rpc("set_acting_tenant", { _tid: header })` al inicio del handler cuando el header está presente y el usuario es super. Para no tocar cada función, se añade un wrapper `withActingTenant(supabase)` invocado desde los handlers de mayor impacto: hooks de `padron`, `claims`, `billing`, `users`, `dashboard`, `notifications`.
+- Fondo del sidebar usando `--gradient-sidebar` (navy degradado) en lugar de color plano, con un borde derecho de 1px en cyan al 15% para sutil "circuit edge".
+- Logo + título con tracking más amplio (`tracking-[0.18em] uppercase`) y peso ligero — vibra SaaS tech.
+- Ítems de menú:
+  - Estado normal: texto plata claro, icono outline plata
+  - Hover: fondo `bg-white/5`, icono pasa a cyan, transición de 200ms
+  - Activo: barra vertical lima de 2px a la izquierda + fondo `bg-white/8` + texto blanco + icono cyan, en lugar del fondo accent macizo actual
+- Separadores muy finos (`border-white/8`) y label de grupo en `text-[10px] uppercase tracking-[0.2em] text-white/40`.
+- Footer del sidebar con avatar/email en bloque compacto y botón "Cerrar sesión" estilo ghost con icono.
+- Aplica al sidebar del backoffice (`admin-portal-layout`) y al de super (`super.tsx`) usando los mismos tokens, sin duplicar estilos.
 
-### 3. UI — selector + estado "actuando como"
+### 3. Barra superior (header del admin)
 
-- `src/routes/_authenticated/super.tenants.tsx`: agregar acción **"Acceder al backoffice"** por fila → guarda el `tenant_id` en localStorage, invalida React Query y navega a `/admin`.
-- `src/routes/_authenticated/admin.tsx`: si `isSuperAdmin`, dejar de redirigir a `/super`; en lugar de eso, si no hay `actingTenantId` mostrar una pantalla mínima "Elegí una cooperativa para gestionar" con botón a `/super/tenants`.
-- `src/components/layouts/admin-portal-layout.tsx`: barra superior cuando el usuario es super admin → chip "Actuando como: {tenant.name}" + botón "Salir" que limpia el localStorage e invalida queries.
-- `src/routes/_authenticated/super.tsx`: el link "Volver al backoffice" solo se muestra si hay `actingTenantId`.
+- Fondo `bg-card/80 backdrop-blur` con `border-b border-border/60` para efecto "glass".
+- Tipografía del título de página en `font-display` con tracking sutil.
+- Chip "Actuando como: …" rediseñado: pill con borde cyan, fondo `bg-cyan/10`, icono y botón X minimalista.
+- Notificaciones (`NotificationsBell`) con badge en lima.
 
-### 4. Login flow
+### 4. Botones — `src/components/ui/button.tsx`
 
-`src/routes/login.tsx`: si el usuario es super admin sin tenant propio y sin `actingTenantId`, redirigir a `/super` (no a `/admin`). El resto del flujo queda igual.
+Añadir/ajustar variantes (manteniendo `default`, `outline`, `ghost`, `destructive`, `link`, `secondary` existentes):
 
-## Archivos a tocar
+- `default`: navy sólido en light / cyan en dark, con `shadow-sm` y hover que aplica `shadow-glow` (halo cyan) + leve `-translate-y-px` (≤120ms).
+- **Nueva** `tech`: gradiente `--gradient-brand` con texto blanco, borde interior sutil (`inset 0 1px 0 white/10`) y glow cyan en hover. Pensada para CTAs primarias (login, "Nuevo registro", "Guardar").
+- **Nueva** `glow`: outline cyan transparente con texto cyan, hover rellena fondo `bg-cyan/10` y agrega glow. Para acciones secundarias destacadas.
+- `outline`: borde `border-border/70`, hover sube a borde cyan + texto cyan.
+- `ghost`: hover `bg-foreground/5` + texto accent.
+- Todos los botones: `rounded-md` (consistente con `--radius`), `font-medium`, transición 150ms en color/shadow/transform; sin gradientes chillones, todo medido.
+- Los botones "Nuevo registro" en las esquinas de las pestañas (`admin.socios`, `admin.suministros`, etc.) pasan a la variante `tech` para que la acción primaria destaque sin sobrecargar.
 
-- `supabase/migrations/<nuevo>.sql` (current_tenant_id, set_acting_tenant)
-- `src/lib/acting-tenant.ts` (nuevo)
-- `src/integrations/supabase/acting-tenant-attacher.ts` (nuevo)
-- `src/start.ts`
-- `src/routes/_authenticated/admin.tsx`
-- `src/routes/_authenticated/super.tsx`
-- `src/routes/_authenticated/super.tenants.tsx`
-- `src/components/layouts/admin-portal-layout.tsx`
-- `src/routes/login.tsx`
-- Server fns con `requireSupabaseAuth` que tocan tablas tenant-scoped: invocación de `set_acting_tenant` al inicio del handler usando el header.
+### 5. Inputs, tabs y badges (refinamientos consistentes)
 
-## Fuera de alcance
+- **Inputs/Select**: borde `border-input` neutral, focus pasa a `ring-2 ring-ring/40 border-ring` (cyan) — ya soportado por tokens, solo verificar.
+- **Tabs** del workspace: indicador activo como subrayado de 2px en cyan en lugar de pill macizo, texto activo en `text-foreground`.
+- **Badges de estado**: usar tokens `--status-*` ya recalibrados (verde lima para activo/pagado, ámbar para pendiente, coral para vencido) con fondos al 12% y texto al 100%.
 
-- No se modifican RLS (siguen usando `current_tenant_id()` y `is_super_admin()`).
-- No se cambia el onboarding ni la creación de tenants.
-- No se altera el portal `/cliente`.
+### Fuera de alcance
+
+- No se cambian rutas, lógica, queries ni layouts estructurales.
+- Tipografía actual (`Space Grotesk` + `Inter`) se conserva — ya transmite el tono tech.
+- No se modifica el logo ni assets de marca.
+- No se aplica a `/cliente` (portal de usuario final) en esta tanda salvo herencia automática de tokens.
+
+### Detalles técnicos
+
+Archivos a tocar:
+
+```text
+src/styles.css                                  (tokens, gradientes, sombras)
+src/components/ui/button.tsx                    (variantes tech + glow, refinar default/outline)
+src/components/ui/sidebar.tsx                   (gradiente de fondo, ítem activo, separadores)
+src/components/layouts/admin-portal-layout.tsx  (header glass, chip "Actuando como")
+src/routes/_authenticated/super.tsx             (sidebar con mismos estilos)
+src/components/workspace/workspace-tabs-bar.tsx (subrayado cyan en tab activa)
+```
+
+### Verificación
+
+Tras aplicar, revisar visualmente:
+1. Login / landing — botón primario `tech`, focus cyan.
+2. `/admin` — sidebar con gradiente, ítem activo con barra lima, header glass.
+3. Pestañas con botón "Nuevo …" en esquina superior derecha.
+4. Tablas con badges de estado.
+5. `/super` — mismo lenguaje visual.
