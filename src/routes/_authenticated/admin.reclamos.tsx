@@ -146,7 +146,7 @@ function CrewsTab() {
   return (
     <Card>
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
-        <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:cuadrilla.edit:new", viewKey: "cuadrilla.edit", title: "Nueva cuadrilla", iconKey: "wrench", parentModule: "reclamos" })}>
+        <Button variant="tech" size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:cuadrilla.edit:new", viewKey: "cuadrilla.edit", title: "Nueva cuadrilla", iconKey: "wrench", parentModule: "reclamos" })}>
             <Plus className="mr-1 h-4 w-4" />Nueva
           </Button>
       </div>

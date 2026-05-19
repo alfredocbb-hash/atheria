@@ -74,7 +74,7 @@ export function SuministrosPage() {
                 <SelectItem value="inactive">Baja</SelectItem>
               </SelectContent>
             </Select>
-        <Button size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:suministro.new", viewKey: "suministro.new", title: "Nuevo suministro", iconKey: "plus", parentModule: "suministros" })}>
+        <Button variant="tech" size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:suministro.new", viewKey: "suministro.new", title: "Nuevo suministro", iconKey: "plus", parentModule: "suministros" })}>
           <Plus className="mr-1 h-4 w-4" />Nuevo suministro
         </Button>
       </div>
