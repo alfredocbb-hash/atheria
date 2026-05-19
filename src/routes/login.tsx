@@ -42,7 +42,6 @@ function LoginPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const [isSuper, setIsSuper] = useState<boolean | null>(null);
 
   useEffect(() => {
     const userId = auth.user?.id;
@@ -55,9 +54,7 @@ function LoginPage() {
         .eq("user_id", userId)
         .maybeSingle();
       if (cancelled) return;
-      const superFlag = !!data;
-      setIsSuper(superFlag);
-      const dest = superFlag
+      const dest = data
         ? "/super"
         : auth.isAdminOrOperator
           ? "/admin"
