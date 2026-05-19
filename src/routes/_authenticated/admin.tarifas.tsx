@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Pencil, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,12 +97,31 @@ export function TarifasPage() {
                       />
                     </TableCell>
                     <TableCell className="text-right">
-                      <DeleteButton
-                        iconOnly
-                        title={`¿Eliminar tarifa "${t.name}"?`}
-                        description="No se podrá eliminar si está siendo usada por alguna factura."
-                        onConfirm={() => del.mutate(t.id)}
-                      />
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Editar tarifa"
+                          onClick={() =>
+                            ws.openView({
+                              id: `view:tarifa.edit:${t.id}`,
+                              viewKey: "tarifa.edit",
+                              title: `Editar: ${t.name}`,
+                              iconKey: "pencil",
+                              parentModule: "tarifas",
+                              payload: { id: t.id },
+                            })
+                          }
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <DeleteButton
+                          iconOnly
+                          title={`¿Eliminar tarifa "${t.name}"?`}
+                          description="No se podrá eliminar si está siendo usada por alguna factura."
+                          onConfirm={() => del.mutate(t.id)}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
