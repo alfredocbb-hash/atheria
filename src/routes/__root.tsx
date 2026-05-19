@@ -158,19 +158,29 @@ function AuthGate() {
   }, []);
 
   useEffect(() => {
+    let prevUserId: string | undefined;
     const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
+      const nextUserId = newSession?.user?.id;
+      const userChanged = nextUserId !== prevUserId;
       if (!newSession) setRoles([]);
+      // Only react meaningfully when the user identity actually changed,
+      // or on explicit sign in/out events. TOKEN_REFRESHED and similar
+      // events fire frequently and must NOT trigger a global refetch.
+      const isSignInOut = event === "SIGNED_IN" || event === "SIGNED_OUT";
+      if (!userChanged && !isSignInOut) {
+        return;
+      }
+      prevUserId = nextUserId;
       // defer to avoid recursive deadlocks inside the listener
       setTimeout(() => {
-        void loadRoles(newSession?.user?.id);
-        router.invalidate();
+        void loadRoles(nextUserId);
         if (event === "SIGNED_OUT" || !newSession) {
-          // Cancel + drop cached user-scoped queries so they don't refetch
-          // without a bearer token during the logout transition.
+          router.invalidate();
           queryClient.cancelQueries();
           queryClient.removeQueries();
-        } else {
+        } else if (userChanged) {
+          router.invalidate();
           queryClient.invalidateQueries();
         }
       }, 0);
@@ -178,6 +188,7 @@ function AuthGate() {
 
     void supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
+      prevUserId = data.session?.user?.id;
       void loadRoles(data.session?.user?.id).finally(() => setIsLoading(false));
     });
 
