@@ -53,7 +53,7 @@ export function SuministrosPage() {
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
         <div className="relative min-w-[220px] flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar por n° suministro o tarifa…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder="Buscar por n° servicio o tarifa…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Select value={svcFilter} onValueChange={setSvcFilter}>
           <SelectTrigger className="w-[160px]"><SelectValue placeholder="Servicio" /></SelectTrigger>
@@ -74,8 +74,8 @@ export function SuministrosPage() {
                 <SelectItem value="inactive">Baja</SelectItem>
               </SelectContent>
             </Select>
-        <Button variant="tech" size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:suministro.new", viewKey: "suministro.new", title: "Nuevo suministro", iconKey: "plus", parentModule: "suministros" })}>
-          <Plus className="mr-1 h-4 w-4" />Nuevo suministro
+        <Button variant="tech" size="sm" className="ml-auto" onClick={() => ws.openView({ id: "view:suministro.new", viewKey: "suministro.new", title: "Nuevo servicio", iconKey: "plus", parentModule: "suministros" })}>
+          <Plus className="mr-1 h-4 w-4" />Nuevo servicio
         </Button>
       </div>
       <CardContent className="pt-4">
@@ -83,7 +83,7 @@ export function SuministrosPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>N°</TableHead><TableHead>Servicio</TableHead><TableHead>Socio</TableHead>
+                  <TableHead>N°</TableHead><TableHead>Tipo</TableHead><TableHead>Cliente</TableHead>
                   <TableHead>Dirección</TableHead><TableHead>Tarifa</TableHead><TableHead>Estado</TableHead>
                   <TableHead className="w-12" />
                 </TableRow>
@@ -92,7 +92,7 @@ export function SuministrosPage() {
                 {isLoading ? (
                   <TableRow><TableCell colSpan={7} className="py-10 text-center"><Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" /></TableCell></TableRow>
                 ) : (data ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">Sin suministros.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">Sin servicios.</TableCell></TableRow>
                 ) : (
                   (data ?? []).map((s: any) => (
                     <TableRow key={s.id}>
@@ -124,7 +124,7 @@ export function SuministrosPage() {
                         </DropdownMenu>
                         <DeleteButton
                           iconOnly
-                          title={`¿Eliminar suministro ${s.supply_number}?`}
+                          title={`¿Eliminar servicio ${s.supply_number}?`}
                           description="Si tiene medidores o facturas activas, la operación será rechazada."
                           onConfirm={() => del.mutate(s.id)}
                         />
