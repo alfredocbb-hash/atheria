@@ -55,9 +55,13 @@ export function useIsSuperAdmin() {
   const userId = auth.user?.id;
   return useQuery({
     queryKey: ["super", "whoami", userId ?? "anon"],
-    enabled: !!userId,
+    enabled: !!userId && auth.rolesLoaded,
     staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
     retry: 1,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
     queryFn: async () => {
       if (!userId) return { isSuperAdmin: false };
       const { data, error } = await supabase
