@@ -25,7 +25,7 @@ export function SociosPage() {
   const [debounced, setDebounced] = useState("");
 
   useEffect(() => { const t = setTimeout(() => setDebounced(search), 300); return () => clearTimeout(t); }, [search]);
-  useEffect(() => { if (!auth.isLoading && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth, navigate]);
+  useEffect(() => { if (!auth.isLoading && auth.rolesLoaded && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth.isLoading, auth.rolesLoaded, auth.isAdminOrOperator, navigate]);
 
   const { data, isLoading } = useMembers(debounced);
   const del = useDeleteMember();

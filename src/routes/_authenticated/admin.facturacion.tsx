@@ -22,7 +22,7 @@ const fmtMoney = (n: number, c = "ARS") => new Intl.NumberFormat("es-AR", { styl
 export function FacturacionPage() {
   const auth = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { if (!auth.isLoading && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth, navigate]);
+  useEffect(() => { if (!auth.isLoading && auth.rolesLoaded && !auth.isAdminOrOperator) navigate({ to: "/cliente", replace: true }); }, [auth.isLoading, auth.rolesLoaded, auth.isAdminOrOperator, navigate]);
   return (
     <Tabs defaultValue="invoices" className="space-y-4">
         <TabsList>
