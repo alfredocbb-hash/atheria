@@ -26,7 +26,13 @@ export function useCreateUser() {
   const fn = useServerFn(createUserWithRole);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    mutationFn: (data: {
+      email: string;
+      password: string;
+      full_name: string;
+      app_roles?: Array<"admin" | "operator" | "client">;
+      is_super_admin?: boolean;
+    }) => fn({ data }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["super-users"] });
       toast.success("Usuario creado");
@@ -39,7 +45,8 @@ export function useSetAppRole() {
   const fn = useServerFn(setAppRole);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    mutationFn: (data: { user_id: string; role: "admin" | "operator" | "client"; enabled: boolean }) =>
+      fn({ data }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["super-users"] }),
     onError: (e: Error) => toast.error("Error", { description: e.message }),
   });
@@ -49,7 +56,7 @@ export function useSetSuperAdmin() {
   const fn = useServerFn(setSuperAdmin);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    mutationFn: (data: { user_id: string; enabled: boolean }) => fn({ data }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["super-users"] }),
     onError: (e: Error) => toast.error("Error", { description: e.message }),
   });
@@ -59,7 +66,11 @@ export function useSetTenantMembership() {
   const fn = useServerFn(setTenantMembership);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    mutationFn: (data: {
+      user_id: string;
+      tenant_id: string;
+      role: "admin" | "operador" | "user" | null;
+    }) => fn({ data }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["super-users"] }),
     onError: (e: Error) => toast.error("Error", { description: e.message }),
   });
@@ -79,7 +90,12 @@ export function useSetGlobalPermission() {
   const fn = useServerFn(setGlobalPermission);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    mutationFn: (data: {
+      module_key: string;
+      role_scope: "app_role" | "tenant_role";
+      role: string;
+      enabled: boolean;
+    }) => fn({ data }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["super-perms", "global"] }),
     onError: (e: Error) => toast.error("Error", { description: e.message }),
   });
@@ -98,7 +114,13 @@ export function useSetTenantPermission() {
   const fn = useServerFn(setTenantPermission);
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: Parameters<typeof fn>[0]["data"]) => fn({ data }),
+    mutationFn: (data: {
+      tenant_id: string;
+      module_key: string;
+      role_scope: "app_role" | "tenant_role";
+      role: string;
+      enabled: boolean | null;
+    }) => fn({ data }),
     onSuccess: (_r, vars) =>
       qc.invalidateQueries({ queryKey: ["super-perms", "tenant", vars.tenant_id] }),
     onError: (e: Error) => toast.error("Error", { description: e.message }),
