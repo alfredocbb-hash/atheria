@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import {
-  amISuperAdmin,
   createTenant,
   getSuperDashboard,
   getTenantBillingConfig,
@@ -50,12 +51,23 @@ type UpsertPlanInput = {
 };
 
 export function useIsSuperAdmin() {
-  const fn = useServerFn(amISuperAdmin);
+  const auth = useAuth();
+  const userId = auth.user?.id;
   return useQuery({
-    queryKey: ["super", "whoami"],
-    queryFn: () => fn({}),
-    retry: false,
+    queryKey: ["super", "whoami", userId ?? "anon"],
+    enabled: !!userId,
     staleTime: 5 * 60_000,
+    retry: 1,
+    queryFn: async () => {
+      if (!userId) return { isSuperAdmin: false };
+      const { data, error } = await supabase
+        .from("super_admins")
+        .select("user_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return { isSuperAdmin: !!data };
+    },
   });
 }
 
