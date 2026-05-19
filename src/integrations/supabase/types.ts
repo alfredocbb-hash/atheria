@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_modules: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          is_active: boolean
+          key: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          is_active?: boolean
+          key?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           created_at: string
@@ -636,6 +669,41 @@ export type Database = {
           },
         ]
       }
+      module_role_permissions: {
+        Row: {
+          enabled: boolean
+          module_key: string
+          role: string
+          role_scope: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          module_key: string
+          role: string
+          role_scope: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          module_key?: string
+          role?: string
+          role_scope?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "module_role_permissions_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "app_modules"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1111,6 +1179,44 @@ export type Database = {
           },
         ]
       }
+      tenant_module_role_permissions: {
+        Row: {
+          enabled: boolean
+          module_key: string
+          role: string
+          role_scope: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled: boolean
+          module_key: string
+          role: string
+          role_scope: string
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          module_key?: string
+          role?: string
+          role_scope?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_module_role_permissions_module_key_fkey"
+            columns: ["module_key"]
+            isOneToOne: false
+            referencedRelation: "app_modules"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       tenant_settings: {
         Row: {
           billing_day: number | null
@@ -1343,6 +1449,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_module: {
+        Args: { _module: string; _tenant: string; _user: string }
+        Returns: boolean
+      }
       current_tenant_id: { Args: never; Returns: string }
       has_role: {
         Args: {
