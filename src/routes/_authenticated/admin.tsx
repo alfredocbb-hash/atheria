@@ -32,20 +32,19 @@ function AdminLayoutRoute() {
   }, []);
 
   useEffect(() => {
-    if (!auth.isLoading && !auth.isAdminOrOperator) {
+    if (auth.isLoading || !auth.rolesLoaded) return;
+    if (!auth.isAdminOrOperator) {
       navigate({ to: "/cliente", replace: true });
       return;
     }
     if (
-      !auth.isLoading &&
-      auth.isAdminOrOperator &&
       ctx.data &&
       !ctx.data.isSuperAdmin &&
       !ctx.data.hasTenant
     ) {
       navigate({ to: "/onboarding", replace: true });
     }
-  }, [auth.isLoading, auth.isAdminOrOperator, ctx.data, navigate]);
+  }, [auth.isLoading, auth.rolesLoaded, auth.isAdminOrOperator, ctx.data, navigate]);
 
   const needsOnboarding =
     ctx.data && !ctx.data.isSuperAdmin && !ctx.data.hasTenant;
@@ -53,7 +52,7 @@ function AdminLayoutRoute() {
   const superNoTenant =
     ctx.data && ctx.data.isSuperAdmin && !ctx.data.hasTenant && !actingTenantId;
 
-  if (auth.isLoading || !auth.isAdminOrOperator || ctx.isLoading || needsOnboarding) {
+  if (auth.isLoading || !auth.rolesLoaded || !auth.isAdminOrOperator || ctx.isLoading || needsOnboarding) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
