@@ -42,14 +42,32 @@ function LoginPage() {
   const auth = useAuth();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
+  const [isSuper, setIsSuper] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!auth.isAuthenticated || !auth.rolesLoaded) return;
-    navigate({
-      to: auth.isAdminOrOperator ? "/admin" : "/cliente",
-      replace: true,
-    });
-  }, [auth.isAuthenticated, auth.rolesLoaded, auth.isAdminOrOperator, navigate]);
+    const userId = auth.user?.id;
+    if (!auth.isAuthenticated || !auth.rolesLoaded || !userId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("super_admins")
+        .select("user_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (cancelled) return;
+      const superFlag = !!data;
+      setIsSuper(superFlag);
+      const dest = superFlag
+        ? "/super"
+        : auth.isAdminOrOperator
+          ? "/admin"
+          : "/cliente";
+      navigate({ to: dest, replace: true });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.isAuthenticated, auth.rolesLoaded, auth.isAdminOrOperator, auth.user?.id, navigate]);
 
   const form = useForm<LoginInput>({
     resolver: zodResolver(schema),
