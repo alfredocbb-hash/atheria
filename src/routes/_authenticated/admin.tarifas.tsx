@@ -35,6 +35,7 @@ export function TarifasPage() {
     <Card>
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
         <Button
+            variant="tech"
             size="sm"
             className="ml-auto"
             onClick={() =>
