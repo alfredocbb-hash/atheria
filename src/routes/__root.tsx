@@ -57,9 +57,16 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     if (typeof window === "undefined") return;
     const KEY = "lovable.chunkReload";
     try {
-      if (sessionStorage.getItem(KEY) === "1") return;
-      sessionStorage.setItem(KEY, "1");
-      window.location.reload();
+      const raw = sessionStorage.getItem(KEY);
+      const attempts = raw ? parseInt(raw, 10) || 0 : 0;
+      // Cap auto-reloads to avoid a refresh loop when the HTML is itself cached.
+      if (attempts >= 2) return;
+      sessionStorage.setItem(KEY, String(attempts + 1));
+      // Bust HTML cache so we don't refetch the same stale index.html that
+      // points at the missing chunk.
+      const url = new URL(window.location.href);
+      url.searchParams.set("_v", Date.now().toString());
+      window.location.replace(url.toString());
     } catch {
       window.location.reload();
     }
@@ -174,7 +181,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
+  // Successful mount = chunks loaded fine; reset the chunk-error counter so
+  // a future stale-chunk error can auto-reload again.
+  useEffect(() => {
+    try { sessionStorage.removeItem("lovable.chunkReload"); } catch {}
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <AuthGate />

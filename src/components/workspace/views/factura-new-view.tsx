@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useGenerateInvoice, useSuppliesLite } from "@/hooks/use-billing";
 import { useWorkspace } from "../workspace-context";
 import type { ViewComponentProps } from "../dynamic-views";
+import { useDraftState } from "@/hooks/use-draft-state";
 
 export function FacturaNewView({ tabId }: ViewComponentProps) {
   const ws = useWorkspace();
@@ -17,7 +18,7 @@ export function FacturaNewView({ tabId }: ViewComponentProps) {
   const today = new Date().toISOString().slice(0, 10);
   const monthAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
   const inTen = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
-  const [form, setForm] = useState<any>({
+  const [form, setForm, clearDraft] = useDraftState<any>(tabId, {
     member_id: "", supply_id: "", period_start: monthAgo, period_end: today, due_date: inTen, tax_rate: 0, notes: "",
   });
 
@@ -52,6 +53,7 @@ export function FacturaNewView({ tabId }: ViewComponentProps) {
         ...form,
         tax_rate: Math.min(1, Math.max(0, Number(form.tax_rate) || 0)),
       });
+      clearDraft();
       ws.closeTab(tabId);
     } catch {
       // El hook muestra el error; mantener la pestaña abierta evita pantalla en blanco.
@@ -126,7 +128,7 @@ export function FacturaNewView({ tabId }: ViewComponentProps) {
               <Button onClick={submit} disabled={gen.isPending || !form.supply_id}>
                 {gen.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Generar
               </Button>
-              <Button variant="outline" onClick={() => ws.closeTab(tabId)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => { clearDraft(); ws.closeTab(tabId); }}>Cancelar</Button>
             </div>
           </div>
         </CardContent>

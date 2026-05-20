@@ -1,59 +1,33 @@
-## Contexto
+## Plan
 
-Repasé el código y la base de datos. Dos puntos:
+### 1. Detener el bucle de actualización/login
+- Ajustar el `ErrorComponent` global para que los errores de chunks viejos no queden atrapados mostrando “Actualizando la aplicación…” indefinidamente.
+- Cambiar la recarga automática para que use una marca por versión/ruta con TTL corto, y si el chunk sigue fallando mostrar una acción segura en vez de recargar constantemente.
+- Esto ataca el error real visto en consola: `error loading dynamically imported module .../_authenticated-*.js`, que aparece cuando el navegador conserva una versión anterior mientras la preview ya generó assets nuevos.
 
-### 1) Aislamiento por tenant (clientes, tarifas, reclamos, servicios, etc.)
+### 2. Hacer más estable la sesión al volver a la pestaña
+- Revisar el `AuthGate` para evitar que eventos de auth secundarios o refetches globales borren queries/estado innecesariamente.
+- Mantener la sesión como fuente de verdad y evitar navegación agresiva a `/login` mientras el estado de auth todavía está hidratándose.
+- La meta es que volver a una pestaña del navegador no saque al usuario si la sesión sigue vigente.
 
-Ya está implementado a nivel de base de datos. Todas las tablas operativas (`members`, `supplies`, `tariffs`, `claims`, `meters`, `invoices`, `payments`, etc.) tienen RLS con la cláusula:
+### 3. Preservar borradores no guardados de pestañas internas
+- Agregar una utilidad pequeña de persistencia de borradores por usuario + `tabId` usando almacenamiento del navegador.
+- Aplicarla a los formularios operativos principales que hoy guardan datos solo en memoria:
+  - Nuevo/editar cliente
+  - Nuevo servicio
+  - Nueva tarifa
+  - Editar tarifa
+  - Nueva lectura
+  - Generar factura
+  - Nueva/editar cuadrilla
+- Al guardar correctamente o cancelar/cerrar la pestaña interna, limpiar el borrador correspondiente.
+- Si el usuario se va a otra pestaña del navegador y vuelve, o si hay una recarga por actualización, el formulario se restaura.
 
-```
-tenant_id = current_tenant_id() AND is_tenant_member(tenant_id, ...)
-```
+### 4. Aviso antes de perder cambios
+- Para formularios con cambios sin guardar, agregar protección con `beforeunload` para que el navegador advierta antes de cerrar/refrescar la pestaña.
+- Esto no bloquea el guardado automático de borrador, pero evita pérdidas por cierres accidentales.
 
-`current_tenant_id()` resuelve automáticamente el tenant del usuario logueado (o el "actuando como" del super admin). Es decir: **cada admin/operador de una cooperativa solo ve los datos de su cooperativa**, sin necesidad de cambios. Si querés, puedo agregar una verificación rápida en pantalla creando un segundo tenant de prueba.
-
-No se requiere modificar nada en esta parte. Si estás viendo datos cruzados, lo más probable es que sea por estar "Actuando como" un tenant desde el modo super admin (banner cyan en el header). Confirmame si ese es el caso.
-
-### 2) Falta botón Editar en Tarifas
-
-Confirmado: en `/admin/tarifas` la columna **Acciones** solo tiene el botón eliminar. Sin embargo, ya existen `updateTariff` (server fn) y `useUpdateTariff` (hook), así que sumar la edición es directo.
-
----
-
-## Plan de cambios
-
-**Alcance:** únicamente UI de tarifas. No toca RLS ni lógica de negocio.
-
-### A. Nueva vista de edición de tarifa
-- Crear `src/components/workspace/views/tarifa-edit-view.tsx` (clonando el formulario de `tarifa-new-view.tsx`) que:
-  - Recibe `payload: { id: string }`.
-  - Carga la tarifa actual desde `useTariffs()` (filtra por id) para precargar el form.
-  - Al guardar usa `useUpdateTariff()` con `{ id, patch: form }` y cierra la pestaña.
-  - Botones "Guardar cambios" y "Cancelar".
-
-### B. Registrar la vista dinámica
-- En `src/components/workspace/dynamic-views.ts`: agregar `"tarifa.edit": TarifaEditView`.
-
-### C. Agregar acción Editar en la tabla
-- En `src/routes/_authenticated/admin.tarifas.tsx`:
-  - Ampliar la columna Acciones para incluir un botón con icono `Pencil` (variant ghost, iconOnly).
-  - Al hacer click llama a `ws.openView({ id: \`view:tarifa.edit:${t.id}\`, viewKey: "tarifa.edit", title: \`Editar: ${t.name}\`, iconKey: "pencil", parentModule: "tarifas", payload: { id: t.id } })`.
-
-### D. Permisos
-- El check `adminOnly` ya está en el módulo Tarifas a nivel de navegación; el botón editar queda visible para cualquier staff que entre al módulo (igual que ahora el toggle activo/eliminar). Si querés restringirlo solo a `admin` (no operador), lo agrego con `auth.hasRole("admin")` envolviendo el botón.
-
----
-
-## Detalle técnico
-
-- No requiere migraciones ni cambios en server functions (todo ya existe).
-- Tipo `payload` del workspace ya soporta objetos arbitrarios.
-- El `id` del tab incluye el `t.id` para permitir editar varias tarifas en paralelo sin colisión.
-
-## Fuera de alcance
-
-- Cambios en RLS o multi-tenant.
-- Edición masiva de tarifas.
-- Versionado/historial de tarifas (la tabla ya tiene `valid_from/valid_to` para eso).
-
-¿Confirmás que avance con el plan, y querés que restrinja el botón Editar solo a rol `admin` o lo dejo accesible para staff (admin + operador)?
+### 5. Verificación
+- Revisar que la pantalla de login ya no quede cargando por recargas de versión.
+- Confirmar que una ruta protegida no redirija prematuramente a `/login` mientras auth está cargando.
+- Confirmar que un formulario parcial se restaura después de cambiar de pestaña/recargar.
