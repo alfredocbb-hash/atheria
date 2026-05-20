@@ -8,16 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateTariff } from "@/hooks/use-billing";
 import { useWorkspace } from "../workspace-context";
 import type { ViewComponentProps } from "../dynamic-views";
+import { useDraftState } from "@/hooks/use-draft-state";
 
 export function TarifaNewView({ tabId }: ViewComponentProps) {
   const ws = useWorkspace();
   const create = useCreateTariff();
-  const [form, setForm] = useState<any>({
+  const [form, setForm, clearDraft] = useDraftState<any>(tabId, {
     name: "", service_type: "water", category: "",
     fixed_charge: 0, unit_price: 0, currency: "ARS",
     valid_from: new Date().toISOString().slice(0, 10), valid_to: "", is_active: true,
   });
-  const submit = async () => { await create.mutateAsync(form); ws.closeTab(tabId); };
+  const submit = async () => { await create.mutateAsync(form); clearDraft(); ws.closeTab(tabId); };
+  const cancel = () => { clearDraft(); ws.closeTab(tabId); };
   return (
     <div className="space-y-4">
       <div>
@@ -52,7 +54,7 @@ export function TarifaNewView({ tabId }: ViewComponentProps) {
               <Button onClick={submit} disabled={create.isPending}>
                 {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Crear
               </Button>
-              <Button variant="outline" onClick={() => ws.closeTab(tabId)}>Cancelar</Button>
+              <Button variant="outline" onClick={cancel}>Cancelar</Button>
             </div>
           </div>
         </CardContent>
