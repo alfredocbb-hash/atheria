@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateReading, useSuppliesLite } from "@/hooks/use-billing";
 import { useWorkspace } from "../workspace-context";
 import type { ViewComponentProps } from "../dynamic-views";
+import { useDraftState } from "@/hooks/use-draft-state";
 
 export function LecturaNewView({ tabId }: ViewComponentProps) {
   const ws = useWorkspace();
   const { data: supplies = [] } = useSuppliesLite();
   const create = useCreateReading();
-  const [form, setForm] = useState<any>({
+  const [form, setForm, clearDraft] = useDraftState<any>(tabId, {
     meter_id: "", reading_date: new Date().toISOString().slice(0, 10),
     reading_value: 0, source: "manual", notes: "",
   });
@@ -24,7 +25,8 @@ export function LecturaNewView({ tabId }: ViewComponentProps) {
     }))),
     [supplies],
   );
-  const submit = async () => { await create.mutateAsync(form); ws.closeTab(tabId); };
+  const submit = async () => { await create.mutateAsync(form); clearDraft(); ws.closeTab(tabId); };
+  const cancel = () => { clearDraft(); ws.closeTab(tabId); };
   return (
     <div className="space-y-4">
       <div>
@@ -59,7 +61,7 @@ export function LecturaNewView({ tabId }: ViewComponentProps) {
               <Button onClick={submit} disabled={create.isPending || !form.meter_id}>
                 {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Registrar
               </Button>
-              <Button variant="outline" onClick={() => ws.closeTab(tabId)}>Cancelar</Button>
+              <Button variant="outline" onClick={cancel}>Cancelar</Button>
             </div>
           </div>
         </CardContent>
