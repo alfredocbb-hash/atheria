@@ -181,7 +181,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
+  // Successful mount = chunks loaded fine; reset the chunk-error counter so
+  // a future stale-chunk error can auto-reload again.
+  useEffect(() => {
+    try { sessionStorage.removeItem("lovable.chunkReload"); } catch {}
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <AuthGate />
