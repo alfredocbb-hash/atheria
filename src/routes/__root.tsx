@@ -137,20 +137,26 @@ export const Route = createRootRouteWithContext<{
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Coopecur 2.0 — Plataforma de Servicios" },
+      { title: "Atheria — Plataforma de Servicios" },
       {
         name: "description",
         content:
           "Plataforma de gestión de servicios públicos de Coopecur: facturación, suministros y reclamos en línea.",
       },
       { name: "author", content: "Coopecur" },
-      { property: "og:title", content: "Coopecur 2.0" },
+      { property: "og:title", content: "Atheria — Plataforma de Servicios" },
       {
         property: "og:description",
         content: "Gestión integral de servicios públicos para socios y operadores.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Atheria — Plataforma de Servicios" },
+      { name: "description", content: "Coopecur Connect manages utility services for cooperatives, handling clients, service points, billing, and work orders." },
+      { property: "og:description", content: "Coopecur Connect manages utility services for cooperatives, handling clients, service points, billing, and work orders." },
+      { name: "twitter:description", content: "Coopecur Connect manages utility services for cooperatives, handling clients, service points, billing, and work orders." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1216c7ac-d6fa-4b0a-8f53-b6ba5d3b0ce0/id-preview-c6066b62--2e8291ac-8eb9-40aa-a41d-2e8f5909cf5c.lovable.app-1779284661486.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1216c7ac-d6fa-4b0a-8f53-b6ba5d3b0ce0/id-preview-c6066b62--2e8291ac-8eb9-40aa-a41d-2e8f5909cf5c.lovable.app-1779284661486.png" },
     ],
     links: [
       {
