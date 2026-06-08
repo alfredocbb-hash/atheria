@@ -3,33 +3,40 @@ import { cn } from "@/lib/utils";
 interface AtheriaMarkProps {
   className?: string;
   variant?: "default" | "light";
+  showTagline?: boolean;
 }
 
-export function AtheriaMark({ className, variant = "default" }: AtheriaMarkProps) {
+export function AtheriaMark({
+  className,
+  variant = "default",
+  showTagline = false,
+}: AtheriaMarkProps) {
   const isLight = variant === "light";
+
   return (
     <div className={cn("flex items-center gap-2", className)}>
-      <div
-        className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-lg",
-          isLight ? "bg-white/10" : "bg-[var(--brand-deep)]"
-        )}
-        aria-hidden
-      >
-        <div
-          className="h-3.5 w-3.5 rotate-45 border-2"
-          style={{ borderColor: "var(--brand-teal)" }}
-        />
-      </div>
-      <span
-        className={cn(
-          "text-xl font-bold uppercase tracking-tight",
-          isLight ? "text-white" : "text-[var(--brand-deep)]"
-        )}
-        style={{ fontFamily: "var(--font-display)" }}
-      >
-        Atheria
-      </span>
+      <img
+        src="/atheria-logo.jpeg"
+        alt="Atheria"
+        style={{
+          height: "36px",
+          width: "auto",
+          // Elimina el fondo blanco del JPEG mezclando con el fondo del contenedor
+          mixBlendMode: isLight ? "screen" : "multiply",
+          display: "block",
+        }}
+      />
+      {showTagline && (
+        <span
+          className={cn(
+            "text-[10px] font-semibold uppercase tracking-widest",
+            isLight ? "text-white/60" : "text-muted-foreground"
+          )}
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Software & Consulting
+        </span>
+      )}
     </div>
   );
 }
