@@ -1,9 +1,33 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
 import {
+  listAppModules,
+  getTenantPermissions,
+  setTenantPermission,
+  resetTenantPermissions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  listAppModules,
+  getTenantPermissions,
+  setTenantPermission,
+  resetTenantPermissions, useServerFn } from "@tanstack/react-start";
+import {
+  listAppModules,
+  getTenantPermissions,
+  setTenantPermission,
+  resetTenantPermissions, toast } from "sonner";
+import {
+  listAppModules,
+  getTenantPermissions,
+  setTenantPermission,
+  resetTenantPermissions, supabase } from "@/integrations/supabase/client";
+import {
+  listAppModules,
+  getTenantPermissions,
+  setTenantPermission,
+  resetTenantPermissions, useAuth } from "@/hooks/use-auth";
+import {
+  listAppModules,
+  getTenantPermissions,
+  setTenantPermission,
+  resetTenantPermissions,
   createTenant,
   getSuperDashboard,
   getTenantBillingConfig,
@@ -187,6 +211,52 @@ export function useUpsertTenantBillingConfig() {
     onSuccess: (_r, vars) => {
       qc.invalidateQueries({ queryKey: ["super", "tenant-billing", vars.tenantId] });
       toast.success("Credenciales guardadas");
+    },
+    onError: (e: Error) => toast.error("Error", { description: e.message }),
+  });
+}
+// ---------- Module Permissions ----------
+
+export function useAppModules() {
+  const fn = useServerFn(listAppModules);
+  return useQuery({ queryKey: ["super", "app-modules"], queryFn: () => fn({}) });
+}
+
+export function useTenantPermissions(tenantId: string | null) {
+  const fn = useServerFn(getTenantPermissions);
+  return useQuery({
+    queryKey: ["super", "tenant-permissions", tenantId],
+    queryFn: () => fn({ data: { tenantId: tenantId! } }),
+    enabled: !!tenantId,
+  });
+}
+
+export function useSetTenantPermission() {
+  const fn = useServerFn(setTenantPermission);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      tenantId: string;
+      moduleKey: string;
+      roleScope: "app_role" | "tenant_role";
+      role: string;
+      enabled: boolean;
+    }) => fn({ data }),
+    onSuccess: (_r, vars) => {
+      qc.invalidateQueries({ queryKey: ["super", "tenant-permissions", vars.tenantId] });
+    },
+    onError: (e: Error) => toast.error("Error al guardar permiso", { description: e.message }),
+  });
+}
+
+export function useResetTenantPermissions() {
+  const fn = useServerFn(resetTenantPermissions);
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { tenantId: string }) => fn({ data }),
+    onSuccess: (_r, vars) => {
+      qc.invalidateQueries({ queryKey: ["super", "tenant-permissions", vars.tenantId] });
+      toast.success("Permisos restablecidos a los valores globales");
     },
     onError: (e: Error) => toast.error("Error", { description: e.message }),
   });
