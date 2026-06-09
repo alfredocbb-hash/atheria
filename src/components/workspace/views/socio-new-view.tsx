@@ -5,18 +5,50 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateMember, useUpdateMember } from "@/hooks/use-padron";
 import { useWorkspace } from "../workspace-context";
 import type { ViewComponentProps } from "../dynamic-views";
 
+const trim = (s: string) => s.trim();
+
 const Schema = z.object({
-  member_number: z.string().min(1, "Requerido").max(40),
-  full_name: z.string().min(1, "Requerido").max(160),
-  document_id: z.string().max(40).optional(),
-  email: z.union([z.literal(""), z.string().email("Email inválido")]).optional(),
-  phone: z.string().max(40).optional(),
+  member_number: z
+    .string()
+    .min(1, "Requerido")
+    .max(40)
+    .transform(trim)
+    .refine((v) => v.length > 0, "No puede contener solo espacios"),
+  full_name: z
+    .string()
+    .min(2, "Ingrese el nombre completo (mín. 2 caracteres)")
+    .max(160)
+    .transform(trim)
+    .refine((v) => v.length >= 2, "No puede contener solo espacios"),
+  document_id: z
+    .string()
+    .max(40)
+    .transform(trim)
+    .refine(
+      (v) => v === "" || /^[0-9]{7,9}$/.test(v.replace(/\./g, "")),
+      "DNI inválido (7 a 9 dígitos, sin puntos)"
+    )
+    .optional(),
+  email: z
+    .union([z.literal(""), z.string().email("Email inválido")])
+    .transform((v) => v?.toLowerCase().trim() ?? "")
+    .optional(),
+  phone: z
+    .string()
+    .max(40)
+    .transform(trim)
+    .refine(
+      (v) => v === "" || /^[\d\s\+\-\(\)]{6,20}$/.test(v),
+      "Teléfono inválido (solo números, espacios, +, -, paréntesis)"
+    )
+    .optional(),
   status: z.enum(["active", "inactive", "suspended"]),
   notes: z.string().max(2000).optional(),
 });
@@ -64,21 +96,42 @@ export function SocioNewView({ tabId, payload }: ViewComponentProps) {
             <form onSubmit={onSubmit} className="space-y-3 max-w-2xl">
               <div className="grid grid-cols-2 gap-3">
                 <FormField control={form.control} name="member_number" render={({ field }) => (
-                  <FormItem><FormLabel>N° cliente</FormLabel><FormControl><Input {...field} disabled={!!editing} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>N° cliente</FormLabel>
+                    <FormControl><Input {...field} disabled={!!editing} placeholder="001" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="document_id" render={({ field }) => (
-                  <FormItem><FormLabel>Documento</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>DNI</FormLabel>
+                    <FormControl><Input {...field} placeholder="12345678" inputMode="numeric" /></FormControl>
+                    <FormDescription className="text-[11px]">Sin puntos ni espacios</FormDescription>
+                    <FormMessage />
+                  </FormItem>
                 )} />
               </div>
               <FormField control={form.control} name="full_name" render={({ field }) => (
-                <FormItem><FormLabel>Nombre completo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel>Nombre completo <span className="text-destructive">*</span></FormLabel>
+                  <FormControl><Input {...field} placeholder="Juan Pérez" /></FormControl>
+                  <FormMessage />
+                </FormItem>
               )} />
               <div className="grid grid-cols-2 gap-3">
                 <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl><Input type="email" {...field} placeholder="juan@ejemplo.com" autoComplete="off" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="phone" render={({ field }) => (
-                  <FormItem><FormLabel>Teléfono</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Teléfono</FormLabel>
+                    <FormControl><Input {...field} placeholder="+54 9 11 1234 5678" inputMode="tel" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
               </div>
               <FormField control={form.control} name="status" render={({ field }) => (
@@ -91,6 +144,14 @@ export function SocioNewView({ tabId, payload }: ViewComponentProps) {
                       <SelectItem value="suspended">Suspendido</SelectItem>
                     </SelectContent>
                   </Select><FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="notes" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notas</FormLabel>
+                  <FormControl><Textarea {...field} rows={3} placeholder="Observaciones opcionales…" /></FormControl>
+                  <FormDescription className="text-right text-[11px]">{(field.value ?? "").length}/2000</FormDescription>
+                  <FormMessage />
                 </FormItem>
               )} />
               <div className="flex gap-2 pt-2">
