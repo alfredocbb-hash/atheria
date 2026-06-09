@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   useAddClaimComment, useClaim, useCreateWorkOrder, useCrews, useUpdateClaimStatus, useUpdateWorkOrderStatus,
 } from "@/hooks/use-claims";
@@ -20,6 +21,16 @@ const STATUS_LABEL: Record<string, string> = {
 const CATEGORY_LABEL: Record<string, string> = {
   water_outage: "Corte de agua", gas_outage: "Corte de gas", electricity_outage: "Corte de luz",
   leak: "Pérdida", meter: "Medidor", billing: "Facturación", other: "Otro",
+};
+
+const MAX_WO_NOTES = 1000;
+const MAX_COMMENT = 2000;
+
+// Min datetime: now (no se puede programar en el pasado)
+const nowLocal = () => {
+  const d = new Date();
+  d.setSeconds(0, 0);
+  return d.toISOString().slice(0, 16);
 };
 
 function PriorityBadge({ value }: { value: string }) {
@@ -43,6 +54,7 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
 
   const [crewId, setCrewId] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
+  const [scheduledError, setScheduledError] = useState("");
   const [woNotes, setWoNotes] = useState("");
   const [newStatus, setNewStatus] = useState<string>("");
   const [comment, setComment] = useState("");
@@ -52,6 +64,23 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
   useEffect(() => {
     if (data?.claim?.claim_number) ws.updateTab(tabId, { title: `Reclamo ${data.claim.claim_number}` });
   }, [data?.claim?.claim_number]);
+
+  const validateScheduled = (val: string) => {
+    if (val && val < nowLocal()) {
+      setScheduledError("La fecha programada no puede ser en el pasado");
+      return false;
+    }
+    setScheduledError("");
+    return true;
+  };
+
+  const handleDispatch = () => {
+    if (!validateScheduled(scheduledAt)) return;
+    createWO.mutate(
+      { claim_id: data.claim.id, crew_id: crewId, scheduled_at: scheduledAt || undefined, notes: woNotes.trim() || undefined },
+      { onSuccess: () => { setCrewId(""); setScheduledAt(""); setWoNotes(""); } },
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -65,6 +94,7 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
             <div className="flex justify-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
           ) : (
             <div className="space-y-5">
+              {/* Info */}
               <div>
                 <h3 className="font-semibold">{data.claim.title}</h3>
                 <div className="mt-1 flex flex-wrap gap-2">
@@ -82,6 +112,7 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
                 {data.claim.description && <p className="mt-2 text-sm whitespace-pre-wrap">{data.claim.description}</p>}
               </div>
 
+              {/* Cambiar estado */}
               <div className="rounded-lg border p-3">
                 <Label className="text-xs font-medium uppercase text-muted-foreground">Cambiar estado</Label>
                 <div className="mt-2 flex gap-2">
@@ -91,12 +122,16 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
                       {Object.entries(STATUS_LABEL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <Button onClick={() => updateStatus.mutate({ id: data.claim.id, status: newStatus })} disabled={updateStatus.isPending}>
+                  <Button
+                    onClick={() => updateStatus.mutate({ id: data.claim.id, status: newStatus })}
+                    disabled={updateStatus.isPending || newStatus === data.claim.status}
+                  >
                     Guardar
                   </Button>
                 </div>
               </div>
 
+              {/* Despachar cuadrilla */}
               <div className="rounded-lg border p-3">
                 <Label className="text-xs font-medium uppercase text-muted-foreground">Despachar a cuadrilla</Label>
                 <div className="mt-2 space-y-2">
@@ -108,23 +143,35 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
-                  <Textarea placeholder="Notas para la cuadrilla..." value={woNotes} onChange={(e) => setWoNotes(e.target.value)} rows={2} />
+                  <div>
+                    <Input
+                      type="datetime-local"
+                      value={scheduledAt}
+                      min={nowLocal()}
+                      onChange={(e) => { setScheduledAt(e.target.value); validateScheduled(e.target.value); }}
+                    />
+                    {scheduledError && <p className="mt-1 text-xs text-destructive">{scheduledError}</p>}
+                  </div>
+                  <div>
+                    <Textarea
+                      placeholder="Notas para la cuadrilla…"
+                      value={woNotes}
+                      onChange={(e) => setWoNotes(e.target.value.slice(0, MAX_WO_NOTES))}
+                      rows={2}
+                    />
+                    <p className="mt-1 text-right text-[11px] text-muted-foreground">{woNotes.length}/{MAX_WO_NOTES}</p>
+                  </div>
                   <Button
                     className="w-full"
-                    disabled={!crewId || createWO.isPending}
-                    onClick={() =>
-                      createWO.mutate(
-                        { claim_id: data.claim.id, crew_id: crewId, scheduled_at: scheduledAt, notes: woNotes },
-                        { onSuccess: () => { setCrewId(""); setScheduledAt(""); setWoNotes(""); } },
-                      )
-                    }
+                    disabled={!crewId || createWO.isPending || !!scheduledError}
+                    onClick={handleDispatch}
                   >
                     Crear orden de trabajo
                   </Button>
                 </div>
               </div>
 
+              {/* Órdenes de trabajo */}
               <div>
                 <Label className="text-xs font-medium uppercase text-muted-foreground">Órdenes de trabajo</Label>
                 {data.work_orders.length === 0 ? (
@@ -137,18 +184,12 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
                           <p className="font-medium">{wo.crews?.name} <span className="text-xs text-muted-foreground">({wo.crews?.specialty})</span></p>
                           <Badge variant={wo.status === "completed" ? "default" : wo.status === "cancelled" ? "secondary" : "outline"}>{wo.status}</Badge>
                         </div>
-                        {wo.scheduled_at && <p className="text-xs text-muted-foreground">Programada: {new Date(wo.scheduled_at).toLocaleString()}</p>}
+                        {wo.scheduled_at && <p className="text-xs text-muted-foreground">Programada: {new Date(wo.scheduled_at).toLocaleString("es-AR")}</p>}
                         {wo.notes && <p className="mt-1 text-xs">{wo.notes}</p>}
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {wo.status === "scheduled" && (
-                            <Button size="sm" variant="outline" onClick={() => updateWO.mutate({ id: wo.id, status: "in_progress" })}>Iniciar</Button>
-                          )}
-                          {wo.status === "in_progress" && (
-                            <Button size="sm" onClick={() => updateWO.mutate({ id: wo.id, status: "completed" })}>Completar</Button>
-                          )}
-                          {wo.status !== "completed" && wo.status !== "cancelled" && (
-                            <Button size="sm" variant="ghost" onClick={() => updateWO.mutate({ id: wo.id, status: "cancelled" })}>Cancelar</Button>
-                          )}
+                          {wo.status === "scheduled" && <Button size="sm" variant="outline" onClick={() => updateWO.mutate({ id: wo.id, status: "in_progress" })}>Iniciar</Button>}
+                          {wo.status === "in_progress" && <Button size="sm" onClick={() => updateWO.mutate({ id: wo.id, status: "completed" })}>Completar</Button>}
+                          {wo.status !== "completed" && wo.status !== "cancelled" && <Button size="sm" variant="ghost" onClick={() => updateWO.mutate({ id: wo.id, status: "cancelled" })}>Cancelar</Button>}
                         </div>
                       </div>
                     ))}
@@ -156,6 +197,7 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
                 )}
               </div>
 
+              {/* Comentarios */}
               <div>
                 <Label className="text-xs font-medium uppercase text-muted-foreground">Comentarios</Label>
                 <div className="mt-2 space-y-2">
@@ -163,7 +205,7 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
                   {data.comments.map((co: any) => (
                     <div key={co.id} className="rounded-md border bg-muted/30 p-2 text-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">{new Date(co.created_at).toLocaleString()}</span>
+                        <span className="text-xs text-muted-foreground">{new Date(co.created_at).toLocaleString("es-AR")}</span>
                         {co.is_internal && <Badge variant="secondary" className="text-[10px]">Interno</Badge>}
                       </div>
                       <p className="mt-1 whitespace-pre-wrap">{co.body}</p>
@@ -171,18 +213,26 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
                   ))}
                 </div>
                 <div className="mt-2 space-y-2">
-                  <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Agregar comentario..." rows={2} />
+                  <div>
+                    <Textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value.slice(0, MAX_COMMENT))}
+                      placeholder="Agregar comentario…"
+                      rows={2}
+                    />
+                    <p className="mt-1 text-right text-[11px] text-muted-foreground">{comment.length}/{MAX_COMMENT}</p>
+                  </div>
                   <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} />
-                      Solo interno
-                    </label>
+                    <div className="flex items-center gap-2">
+                      <Switch id="internal-switch" checked={internal} onCheckedChange={setInternal} />
+                      <Label htmlFor="internal-switch" className="cursor-pointer text-xs text-muted-foreground">Solo interno</Label>
+                    </div>
                     <Button
                       size="sm"
                       disabled={!comment.trim() || addComment.isPending}
                       onClick={() =>
                         addComment.mutate(
-                          { claim_id: data.claim.id, body: comment, is_internal: internal },
+                          { claim_id: data.claim.id, body: comment.trim(), is_internal: internal },
                           { onSuccess: () => setComment("") },
                         )
                       }
