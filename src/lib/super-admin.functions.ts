@@ -452,3 +452,83 @@ export const upsertTenantBillingConfig = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+// ---------- Module Permissions ----------
+
+export const listAppModules = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context as any;
+    await assertSuper(supabase);
+    const { data, error } = await supabase
+      .from("app_modules")
+      .select("key, title, category, sort_order, is_active")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+    if (error) throw new Error(error.message);
+    return { modules: data ?? [] };
+  });
+
+export const getTenantPermissions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ tenantId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context as any;
+    await assertSuper(supabase);
+    const { data: defaults } = await supabase
+      .from("module_role_permissions")
+      .select("module_key, role_scope, role, enabled");
+    const { data: overrides } = await supabase
+      .from("tenant_module_role_permissions")
+      .select("module_key, role_scope, role, enabled")
+      .eq("tenant_id", data.tenantId);
+    return {
+      defaults: defaults ?? [],
+      overrides: overrides ?? [],
+    };
+  });
+
+const SetPermissionSchema = z.object({
+  tenantId: z.string().uuid(),
+  moduleKey: z.string().min(1),
+  roleScope: z.enum(["app_role", "tenant_role"]),
+  role: z.string().min(1),
+  enabled: z.boolean(),
+});
+
+export const setTenantPermission = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => SetPermissionSchema.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context as any;
+    await assertSuper(supabase);
+    const { error } = await supabase
+      .from("tenant_module_role_permissions")
+      .upsert(
+        {
+          tenant_id: data.tenantId,
+          module_key: data.moduleKey,
+          role_scope: data.roleScope,
+          role: data.role,
+          enabled: data.enabled,
+          updated_by: userId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "tenant_id,module_key,role_scope,role" },
+      );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const resetTenantPermissions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({ tenantId: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context as any;
+    await assertSuper(supabase);
+    const { error } = await supabase
+      .from("tenant_module_role_permissions")
+      .delete()
+      .eq("tenant_id", data.tenantId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
