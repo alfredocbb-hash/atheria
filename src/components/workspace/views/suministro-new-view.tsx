@@ -5,27 +5,80 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateSupply, useMembers } from "@/hooks/use-padron";
 import { useWorkspace } from "../workspace-context";
 import type { ViewComponentProps } from "../dynamic-views";
 
+const trim = (s: string) => s.trim();
+const today = new Date().toISOString().slice(0, 10);
+
 const Schema = z.object({
-  supply_number: z.string().min(1).max(40),
+  supply_number: z
+    .string()
+    .min(1, "Requerido")
+    .max(40)
+    .transform(trim)
+    .refine((v) => v.length > 0, "No puede contener solo espacios"),
   member_id: z.string().uuid("Seleccioná un cliente"),
   service_type: z.enum(["water", "gas", "electricity"]),
   status: z.enum(["active", "suspended", "inactive", "pending"]),
-  tariff_category: z.string().max(60).optional(),
-  activated_at: z.string().optional(),
+  tariff_category: z
+    .string()
+    .max(60)
+    .transform(trim)
+    .optional(),
+  activated_at: z
+    .string()
+    .optional()
+    .refine(
+      (v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v),
+      "Fecha inválida"
+    )
+    .refine(
+      (v) => !v || v <= today,
+      "La fecha de activación no puede ser futura"
+    ),
   address: z.object({
-    street: z.string().min(1, "Requerido").max(160),
-    street_number: z.string().max(20).optional(),
-    floor: z.string().max(10).optional(),
-    apartment: z.string().max(10).optional(),
-    city: z.string().min(1, "Requerido").max(120),
-    province: z.string().min(1, "Requerido").max(120),
-    postal_code: z.string().max(20).optional(),
+    street: z
+      .string()
+      .min(1, "Requerido")
+      .max(160)
+      .transform(trim)
+      .refine((v) => v.length > 0, "No puede contener solo espacios"),
+    street_number: z
+      .string()
+      .max(20)
+      .transform(trim)
+      .refine(
+        (v) => v === "" || /^[a-zA-Z0-9\s\-]+$/.test(v),
+        "Solo letras, números y guiones"
+      )
+      .optional(),
+    floor: z.string().max(10).transform(trim).optional(),
+    apartment: z.string().max(10).transform(trim).optional(),
+    city: z
+      .string()
+      .min(1, "Requerido")
+      .max(120)
+      .transform(trim)
+      .refine((v) => v.length > 0, "No puede contener solo espacios"),
+    province: z
+      .string()
+      .min(1, "Requerido")
+      .max(120)
+      .transform(trim)
+      .refine((v) => v.length > 0, "No puede contener solo espacios"),
+    postal_code: z
+      .string()
+      .max(20)
+      .transform(trim)
+      .refine(
+        (v) => v === "" || /^\d{4}$/.test(v),
+        "Código postal argentino (4 dígitos)"
+      )
+      .optional(),
     notes: z.string().max(500).optional(),
   }),
 });
@@ -58,7 +111,11 @@ export function SuministroNewView({ tabId }: ViewComponentProps) {
             <form onSubmit={onSubmit} className="space-y-3 max-w-3xl">
               <div className="grid grid-cols-2 gap-3">
                 <FormField control={form.control} name="supply_number" render={({ field }) => (
-                  <FormItem><FormLabel>N° servicio</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>N° servicio <span className="text-destructive">*</span></FormLabel>
+                    <FormControl><Input {...field} placeholder="0001" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="service_type" render={({ field }) => (
                   <FormItem><FormLabel>Tipo de servicio</FormLabel>
@@ -74,7 +131,7 @@ export function SuministroNewView({ tabId }: ViewComponentProps) {
                 )} />
               </div>
               <FormField control={form.control} name="member_id" render={({ field }) => (
-                <FormItem><FormLabel>Cliente titular</FormLabel>
+                <FormItem><FormLabel>Cliente titular <span className="text-destructive">*</span></FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Seleccionar cliente…" /></SelectTrigger></FormControl>
                     <SelectContent>
@@ -100,44 +157,76 @@ export function SuministroNewView({ tabId }: ViewComponentProps) {
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="tariff_category" render={({ field }) => (
-                  <FormItem><FormLabel>Categoría tarifaria</FormLabel><FormControl><Input placeholder="R1 / R2 / Comercial…" {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Categoría tarifaria</FormLabel>
+                    <FormControl><Input placeholder="R1 / R2 / Comercial…" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )} />
               </div>
               <FormField control={form.control} name="activated_at" render={({ field }) => (
-                <FormItem><FormLabel>Fecha de activación</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel>Fecha de activación</FormLabel>
+                  <FormControl><Input type="date" max={today} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
               )} />
+
+              {/* Dirección */}
               <div className="rounded-md border p-3 space-y-3">
                 <p className="text-sm font-medium">Dirección del servicio</p>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2">
                     <FormField control={form.control} name="address.street" render={({ field }) => (
-                      <FormItem><FormLabel>Calle</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                      <FormItem>
+                        <FormLabel>Calle <span className="text-destructive">*</span></FormLabel>
+                        <FormControl><Input {...field} placeholder="Av. San Martín" /></FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )} />
                   </div>
                   <FormField control={form.control} name="address.street_number" render={({ field }) => (
-                    <FormItem><FormLabel>N°</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                      <FormLabel>N°</FormLabel>
+                      <FormControl><Input {...field} placeholder="123" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <FormField control={form.control} name="address.floor" render={({ field }) => (
-                    <FormItem><FormLabel>Piso</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Piso</FormLabel><FormControl><Input {...field} placeholder="1" /></FormControl><FormMessage /></FormItem>
                   )} />
                   <FormField control={form.control} name="address.apartment" render={({ field }) => (
-                    <FormItem><FormLabel>Depto.</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Depto.</FormLabel><FormControl><Input {...field} placeholder="A" /></FormControl><FormMessage /></FormItem>
                   )} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <FormField control={form.control} name="address.city" render={({ field }) => (
-                    <FormItem><FormLabel>Ciudad</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                      <FormLabel>Ciudad <span className="text-destructive">*</span></FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )} />
                   <FormField control={form.control} name="address.province" render={({ field }) => (
-                    <FormItem><FormLabel>Provincia</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                      <FormLabel>Provincia <span className="text-destructive">*</span></FormLabel>
+                      <FormControl><Input {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )} />
                 </div>
                 <FormField control={form.control} name="address.postal_code" render={({ field }) => (
-                  <FormItem><FormLabel>Código postal</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Código postal</FormLabel>
+                    <FormControl><Input {...field} placeholder="3000" inputMode="numeric" maxLength={4} /></FormControl>
+                    <FormDescription className="text-[11px]">4 dígitos (ej: 3000)</FormDescription>
+                    <FormMessage />
+                  </FormItem>
                 )} />
               </div>
+
               <div className="flex gap-2 pt-2">
                 <Button type="submit" disabled={create.isPending}>
                   {create.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Crear servicio
