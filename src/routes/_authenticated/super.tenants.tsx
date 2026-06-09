@@ -1,41 +1,26 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Loader2, LogIn, Plus, Users } from "lucide-react";
+import { Loader2, LogIn, Plus, Users, ShieldCheck, RotateCcw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { setActingTenant } from "@/lib/acting-tenant";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
+  Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
   useCreateTenant,
@@ -43,6 +28,10 @@ import {
   useTenantMembers,
   useTenantsList,
   useUpdateTenant,
+  useAppModules,
+  useTenantPermissions,
+  useSetTenantPermission,
+  useResetTenantPermissions,
 } from "@/hooks/use-super-admin";
 
 export const Route = createFileRoute("/_authenticated/super/tenants")({
@@ -51,13 +40,26 @@ export const Route = createFileRoute("/_authenticated/super/tenants")({
 
 const STATUSES = ["trial", "active", "past_due", "suspended", "cancelled"] as const;
 
+// Roles que se muestran en la grilla de permisos
+const TENANT_ROLES = [
+  { scope: "tenant_role" as const, role: "admin", label: "Admin" },
+  { scope: "tenant_role" as const, role: "operador", label: "Operador" },
+  { scope: "tenant_role" as const, role: "user", label: "Usuario" },
+];
+
+const CATEGORY_LABEL: Record<string, string> = {
+  tenant: "Módulos de cooperativa",
+  super: "Módulos de plataforma",
+  client: "Portal cliente",
+};
+
 function TenantsPage() {
   const q = useTenantsList();
   const plansQ = usePlansAdmin();
   const update = useUpdateTenant();
   const create = useCreateTenant();
   const [editing, setEditing] = useState<any | null>(null);
-  const [membersOf, setMembersOf] = useState<string | null>(null);
+  const [selectedTenant, setSelectedTenant] = useState<any | null>(null);
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -79,15 +81,11 @@ function TenantsPage() {
         </div>
         <Dialog open={creating} onOpenChange={setCreating}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Nuevo tenant
-            </Button>
+            <Button><Plus className="mr-2 h-4 w-4" /> Nuevo tenant</Button>
           </DialogTrigger>
           <CreateTenantDialog
             plans={plansQ.data?.plans ?? []}
-            onCreate={(payload) =>
-              create.mutateAsync(payload).then(() => setCreating(false))
-            }
+            onCreate={(payload) => create.mutateAsync(payload).then(() => setCreating(false))}
             pending={create.isPending}
           />
         </Dialog>
@@ -114,7 +112,11 @@ function TenantsPage() {
               </TableHeader>
               <TableBody>
                 {(q.data?.tenants ?? []).map((t: any) => (
-                  <TableRow key={t.id}>
+                  <TableRow
+                    key={t.id}
+                    className="cursor-pointer hover:bg-muted/40"
+                    onClick={() => setSelectedTenant(t)}
+                  >
                     <TableCell className="font-medium">{t.name}</TableCell>
                     <TableCell className="font-mono text-xs">{t.slug}</TableCell>
                     <TableCell>{t.plan_name ?? "—"}</TableCell>
@@ -129,27 +131,11 @@ function TenantsPage() {
                         : "—"}
                     </TableCell>
                     <TableCell>{t.members_count}</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => impersonate(t)}
-                        title="Acceder al backoffice como esta cooperativa"
-                      >
+                    <TableCell className="text-right space-x-2" onClick={(e) => e.stopPropagation()}>
+                      <Button size="sm" variant="secondary" onClick={() => impersonate(t)}>
                         <LogIn className="mr-1 h-4 w-4" /> Acceder
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setMembersOf(t.id)}
-                      >
-                        <Users className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditing(t)}
-                      >
+                      <Button size="sm" variant="outline" onClick={() => setEditing(t)}>
                         Editar
                       </Button>
                     </TableCell>
@@ -168,6 +154,7 @@ function TenantsPage() {
         </CardContent>
       </Card>
 
+      {/* Edit dialog */}
       {editing && (
         <EditTenantDialog
           tenant={editing}
@@ -181,37 +168,75 @@ function TenantsPage() {
         />
       )}
 
-      <Sheet open={!!membersOf} onOpenChange={(o) => !o && setMembersOf(null)}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>Miembros del tenant</SheetTitle>
-          </SheetHeader>
-          <MembersList tenantId={membersOf} />
+      {/* Tenant detail drawer */}
+      <Sheet open={!!selectedTenant} onOpenChange={(o) => !o && setSelectedTenant(null)}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          {selectedTenant && (
+            <TenantDrawer tenant={selectedTenant} />
+          )}
         </SheetContent>
       </Sheet>
     </div>
   );
 }
 
-function MembersList({ tenantId }: { tenantId: string | null }) {
+// ─── Tenant Drawer ───────────────────────────────────────────────────────────
+
+function TenantDrawer({ tenant }: { tenant: any }) {
+  return (
+    <>
+      <SheetHeader className="pb-4 border-b">
+        <SheetTitle className="flex items-center gap-2">
+          <span>{tenant.name}</span>
+          <Badge variant={tenant.status === "active" ? "default" : "secondary"} className="text-xs">
+            {tenant.status}
+          </Badge>
+        </SheetTitle>
+        <p className="text-xs text-muted-foreground font-mono">{tenant.slug}</p>
+      </SheetHeader>
+
+      <Tabs defaultValue="members" className="mt-4">
+        <TabsList className="w-full">
+          <TabsTrigger value="members" className="flex-1 gap-1.5">
+            <Users className="h-3.5 w-3.5" /> Miembros
+          </TabsTrigger>
+          <TabsTrigger value="permissions" className="flex-1 gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5" /> Permisos de módulos
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="members" className="mt-4">
+          <MembersList tenantId={tenant.id} />
+        </TabsContent>
+
+        <TabsContent value="permissions" className="mt-4">
+          <PermissionsGrid tenantId={tenant.id} tenantName={tenant.name} />
+        </TabsContent>
+      </Tabs>
+    </>
+  );
+}
+
+// ─── Members list ─────────────────────────────────────────────────────────────
+
+function MembersList({ tenantId }: { tenantId: string }) {
   const q = useTenantMembers(tenantId);
-  if (!tenantId) return null;
   if (q.isLoading)
     return (
-      <div className="py-6 text-center">
+      <div className="py-10 text-center">
         <Loader2 className="mx-auto h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
   return (
-    <ul className="mt-4 divide-y">
+    <ul className="divide-y">
       {(q.data?.members ?? []).map((m: any) => (
         <li key={m.id} className="flex items-center justify-between py-3 text-sm">
-          <span>{m.email}</span>
+          <span className="text-foreground">{m.email}</span>
           <Badge variant="outline">{m.role}</Badge>
         </li>
       ))}
       {q.data && q.data.members.length === 0 && (
-        <li className="py-6 text-center text-sm text-muted-foreground">
+        <li className="py-8 text-center text-sm text-muted-foreground">
           Sin miembros asignados.
         </li>
       )}
@@ -219,10 +244,135 @@ function MembersList({ tenantId }: { tenantId: string | null }) {
   );
 }
 
+// ─── Permissions grid ─────────────────────────────────────────────────────────
+
+function PermissionsGrid({ tenantId, tenantName }: { tenantId: string; tenantName: string }) {
+  const modulesQ = useAppModules();
+  const permsQ = useTenantPermissions(tenantId);
+  const setPermission = useSetTenantPermission();
+  const resetPermissions = useResetTenantPermissions();
+
+  const isLoading = modulesQ.isLoading || permsQ.isLoading;
+
+  // Build effective permissions map: override wins over default
+  const effectiveMap = new Map<string, boolean>();
+  const overrideSet = new Set<string>();
+
+  for (const d of permsQ.data?.defaults ?? []) {
+    const key = `${d.module_key}__${d.role_scope}__${d.role}`;
+    effectiveMap.set(key, d.enabled);
+  }
+  for (const o of permsQ.data?.overrides ?? []) {
+    const key = `${o.module_key}__${o.role_scope}__${o.role}`;
+    effectiveMap.set(key, o.enabled);
+    overrideSet.add(key);
+  }
+
+  const getEnabled = (moduleKey: string, scope: string, role: string) =>
+    effectiveMap.get(`${moduleKey}__${scope}__${role}`) ?? false;
+
+  const isOverride = (moduleKey: string, scope: string, role: string) =>
+    overrideSet.has(`${moduleKey}__${scope}__${role}`);
+
+  const toggle = (moduleKey: string, scope: "app_role" | "tenant_role", role: string, current: boolean) => {
+    setPermission.mutate({ tenantId, moduleKey, roleScope: scope, role, enabled: !current });
+  };
+
+  // Group modules by category
+  const modules = modulesQ.data?.modules ?? [];
+  const byCategory = modules.reduce((acc: Record<string, any[]>, m: any) => {
+    if (!acc[m.category]) acc[m.category] = [];
+    acc[m.category].push(m);
+    return acc;
+  }, {});
+
+  const hasOverrides = (permsQ.data?.overrides ?? []).length > 0;
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-medium">Overrides de permisos para <span className="font-semibold">{tenantName}</span></p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Los toggles en <span className="font-semibold text-[var(--brand-cyan)]">azul</span> son overrides de este tenant.
+            El resto hereda los valores globales.
+          </p>
+        </div>
+        {hasOverrides && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0 gap-1.5 text-destructive hover:text-destructive"
+            onClick={() => {
+              if (confirm(`¿Restablecer todos los permisos de ${tenantName} a los valores globales?`)) {
+                resetPermissions.mutate({ tenantId });
+              }
+            }}
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Restablecer
+          </Button>
+        )}
+      </div>
+
+      {/* Tables by category */}
+      {Object.entries(byCategory).map(([category, mods]) => (
+        <div key={category}>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            {CATEGORY_LABEL[category] ?? category}
+          </p>
+          <div className="rounded-lg border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40">
+                  <TableHead className="w-44">Módulo</TableHead>
+                  {TENANT_ROLES.map((r) => (
+                    <TableHead key={r.role} className="w-24 text-center">{r.label}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(mods as any[]).map((mod) => (
+                  <TableRow key={mod.key}>
+                    <TableCell className="text-sm font-medium">{mod.title}</TableCell>
+                    {TENANT_ROLES.map((r) => {
+                      const enabled = getEnabled(mod.key, r.scope, r.role);
+                      const override = isOverride(mod.key, r.scope, r.role);
+                      return (
+                        <TableCell key={r.role} className="text-center">
+                          <Switch
+                            checked={enabled}
+                            disabled={setPermission.isPending}
+                            onCheckedChange={() => toggle(mod.key, r.scope, r.role, enabled)}
+                            className={override ? "data-[state=checked]:bg-[var(--brand-cyan)]" : ""}
+                          />
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Create tenant dialog ─────────────────────────────────────────────────────
+
 function CreateTenantDialog({
-  plans,
-  onCreate,
-  pending,
+  plans, onCreate, pending,
 }: {
   plans: any[];
   onCreate: (p: { name: string; slug: string; plan_id?: string | null; trial_days?: number; admin_email?: string }) => Promise<unknown>;
@@ -235,9 +385,7 @@ function CreateTenantDialog({
   const [adminEmail, setAdminEmail] = useState("");
   return (
     <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Nuevo tenant</DialogTitle>
-      </DialogHeader>
+      <DialogHeader><DialogTitle>Nuevo tenant</DialogTitle></DialogHeader>
       <div className="space-y-3">
         <div className="grid gap-1">
           <Label>Nombre</Label>
@@ -257,66 +405,39 @@ function CreateTenantDialog({
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Sin plan</SelectItem>
-              {plans.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
+              {plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
         <div className="grid gap-1">
           <Label>Días de prueba</Label>
-          <Input
-            type="number"
-            value={trialDays}
-            onChange={(e) => setTrialDays(parseInt(e.target.value || "0", 10))}
-          />
+          <Input type="number" value={trialDays} onChange={(e) => setTrialDays(parseInt(e.target.value || "0", 10))} />
         </div>
         <div className="grid gap-1">
           <Label>Email del admin inicial (opcional)</Label>
-          <Input
-            type="email"
-            value={adminEmail}
-            onChange={(e) => setAdminEmail(e.target.value)}
-            placeholder="admin@coop.com"
-          />
-          <p className="text-xs text-muted-foreground">
-            Si el usuario ya existe, se asigna como admin. Si no, podés invitarlo después.
-          </p>
+          <Input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@coop.com" />
+          <p className="text-xs text-muted-foreground">Si el usuario ya existe, se asigna como admin.</p>
         </div>
       </div>
       <DialogFooter>
         <Button
           disabled={pending || !name || !slug}
-          onClick={() =>
-            onCreate({
-              name,
-              slug,
-              plan_id: planId === "none" ? null : planId,
-              trial_days: trialDays,
-              admin_email: adminEmail || undefined,
-            })
-          }
+          onClick={() => onCreate({ name, slug, plan_id: planId === "none" ? null : planId, trial_days: trialDays, admin_email: adminEmail || undefined })}
         >
-          {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Crear
+          {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Crear
         </Button>
       </DialogFooter>
     </DialogContent>
   );
 }
 
+// ─── Edit tenant dialog ───────────────────────────────────────────────────────
+
 function EditTenantDialog({
-  tenant,
-  plans,
-  onClose,
-  onSave,
-  pending,
+  tenant, plans, onClose, onSave, pending,
 }: {
-  tenant: any;
-  plans: any[];
-  onClose: () => void;
-  onSave: (patch: any) => Promise<void>;
-  pending: boolean;
+  tenant: any; plans: any[]; onClose: () => void;
+  onSave: (patch: any) => Promise<void>; pending: boolean;
 }) {
   const [name, setName] = useState(tenant.name);
   const [slug, setSlug] = useState(tenant.slug);
@@ -329,9 +450,7 @@ function EditTenantDialog({
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Editar tenant</DialogTitle>
-        </DialogHeader>
+        <DialogHeader><DialogTitle>Editar tenant — {tenant.name}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid gap-1">
             <Label>Nombre</Label>
@@ -348,9 +467,7 @@ function EditTenantDialog({
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Sin plan</SelectItem>
-                  {plans.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
+                  {plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -359,9 +476,7 @@ function EditTenantDialog({
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
+                  {STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -369,11 +484,7 @@ function EditTenantDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1">
               <Label>Fin de trial</Label>
-              <Input
-                type="date"
-                value={trialEnds}
-                onChange={(e) => setTrialEnds(e.target.value)}
-              />
+              <Input type="date" value={trialEnds} onChange={(e) => setTrialEnds(e.target.value)} />
             </div>
             <div className="grid gap-1">
               <Label>Proveedor pagos</Label>
@@ -392,19 +503,9 @@ function EditTenantDialog({
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
           <Button
             disabled={pending}
-            onClick={() =>
-              onSave({
-                name,
-                slug,
-                plan_id: planId === "none" ? null : planId,
-                status,
-                trial_ends_at: trialEnds ? new Date(trialEnds).toISOString() : null,
-                billing_provider: provider,
-              })
-            }
+            onClick={() => onSave({ name, slug, plan_id: planId === "none" ? null : planId, status, trial_ends_at: trialEnds ? new Date(trialEnds).toISOString() : null, billing_provider: provider })}
           >
-            {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Guardar
+            {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Guardar
           </Button>
         </DialogFooter>
       </DialogContent>
