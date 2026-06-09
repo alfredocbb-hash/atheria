@@ -75,6 +75,7 @@ export function ReclamoDetailView({ tabId, payload }: ViewComponentProps) {
   };
 
   const handleDispatch = () => {
+    if (!data?.claim) return;
     if (!validateScheduled(scheduledAt)) return;
     createWO.mutate(
       { claim_id: data.claim.id, crew_id: crewId, scheduled_at: scheduledAt || undefined, notes: woNotes.trim() || undefined },
