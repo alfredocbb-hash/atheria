@@ -14,14 +14,29 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
 const schema = z.object({
-  full_name: z.string().min(2, "Ingrese su nombre completo").max(120),
-  email: z.string().email(),
-  password: z.string().min(8, "Mínimo 8 caracteres"),
+  full_name: z
+    .string()
+    .min(2, "Ingrese su nombre completo (mín. 2 caracteres)")
+    .max(120)
+    .transform((s) => s.trim())
+    .refine((s) => s.length >= 2, "No puede contener solo espacios"),
+  email: z
+    .string()
+    .email("Ingrese un email válido")
+    .transform((s) => s.trim().toLowerCase()),
+  password: z
+    .string()
+    .min(8, "Mínimo 8 caracteres")
+    .max(128, "Máximo 128 caracteres")
+    .refine(
+      (s) => /[A-Z]/.test(s) || /[0-9]/.test(s),
+      "Incluí al menos una mayúscula o un número"
+    ),
 });
 type RegisterInput = z.infer<typeof schema>;
 
 export const Route = createFileRoute("/register")({
-  head: () => ({ meta: [{ title: "Crear cuenta — Coopecur 2.0" }] }),
+  head: () => ({ meta: [{ title: "Crear cuenta — Atheria" }] }),
   component: RegisterPage,
 });
 
@@ -31,9 +46,7 @@ function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (auth.isAuthenticated) {
-      navigate({ to: "/cliente", replace: true });
-    }
+    if (auth.isAuthenticated) navigate({ to: "/cliente", replace: true });
   }, [auth.isAuthenticated, navigate]);
 
   const form = useForm<RegisterInput>({
@@ -56,44 +69,36 @@ function RegisterPage() {
       toast.error("No se pudo crear la cuenta", { description: error.message });
       return;
     }
-    toast.success("Cuenta creada", {
-      description: "Revise su email para confirmar el registro.",
-    });
+    toast.success("Cuenta creada", { description: "Revisá tu email para confirmar el registro." });
   };
 
   const onGoogle = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error("Error con Google", { description: result.error.message });
-    }
+    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
+    if (result.error) toast.error("Error con Google", { description: result.error.message });
   };
 
   return (
     <AuthShell
-      title="Crear cuenta de socio"
-      subtitle="Acceda a su Oficina Virtual de Coopecur"
+      title="Crear cuenta"
+      subtitle="Accedé a tu cooperativa desde Atheria"
       footer={
         <>
-          ¿Ya tiene cuenta?{" "}
-          <Link to="/login" className="font-medium text-primary hover:underline">
-            Inicie sesión
-          </Link>
+          ¿Ya tenés cuenta?{" "}
+          <Link to="/login" className="font-medium text-primary hover:underline">Iniciá sesión</Link>
         </>
       }
     >
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="space-y-2">
           <Label htmlFor="full_name">Nombre completo</Label>
-          <Input id="full_name" {...form.register("full_name")} />
+          <Input id="full_name" autoComplete="name" {...form.register("full_name")} placeholder="Juan Pérez" />
           {form.formState.errors.full_name && (
             <p className="text-xs text-destructive">{form.formState.errors.full_name.message}</p>
           )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" autoComplete="email" {...form.register("email")} />
+          <Input id="email" type="email" autoComplete="email" {...form.register("email")} placeholder="juan@ejemplo.com" />
           {form.formState.errors.email && (
             <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
           )}
@@ -101,6 +106,7 @@ function RegisterPage() {
         <div className="space-y-2">
           <Label htmlFor="password">Contraseña</Label>
           <Input id="password" type="password" autoComplete="new-password" {...form.register("password")} />
+          <p className="text-[11px] text-muted-foreground">Mín. 8 caracteres, incluí una mayúscula o número</p>
           {form.formState.errors.password && (
             <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
           )}
