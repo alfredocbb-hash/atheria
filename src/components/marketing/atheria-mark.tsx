@@ -5,6 +5,8 @@ interface AtheriaMarkProps {
   variant?: "default" | "light";
   showTagline?: boolean;
   size?: "sm" | "md" | "lg";
+  /** Altura exacta en px — tiene prioridad sobre `size` */
+  imageHeight?: number;
 }
 
 export function AtheriaMark({
@@ -12,6 +14,7 @@ export function AtheriaMark({
   variant = "default",
   showTagline = false,
   size = "md",
+  imageHeight,
 }: AtheriaMarkProps) {
   const isLight = variant === "light";
 
@@ -27,7 +30,7 @@ export function AtheriaMark({
         src="/atheria-logo.jpeg"
         alt="Atheria Software & Consulting"
         style={{
-          height: heights[size],
+          height: imageHeight ? `${imageHeight}px` : heights[size],
           width: "auto",
           mixBlendMode: isLight ? "screen" : "multiply",
           display: "block",
