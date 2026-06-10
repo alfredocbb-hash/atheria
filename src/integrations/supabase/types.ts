@@ -504,43 +504,64 @@ export type Database = {
       }
       members: {
         Row: {
+          apartment: string | null
+          city: string | null
           created_at: string
           document_id: string | null
           email: string | null
+          floor: string | null
           full_name: string
           id: string
+          is_renter: boolean
           member_number: string
           notes: string | null
           phone: string | null
+          service_types: string[]
           status: Database["public"]["Enums"]["member_status"]
+          street: string | null
+          street_number: string | null
           tenant_id: string
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          apartment?: string | null
+          city?: string | null
           created_at?: string
           document_id?: string | null
           email?: string | null
+          floor?: string | null
           full_name: string
           id?: string
+          is_renter?: boolean
           member_number: string
           notes?: string | null
           phone?: string | null
+          service_types?: string[]
           status?: Database["public"]["Enums"]["member_status"]
+          street?: string | null
+          street_number?: string | null
           tenant_id: string
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          apartment?: string | null
+          city?: string | null
           created_at?: string
           document_id?: string | null
           email?: string | null
+          floor?: string | null
           full_name?: string
           id?: string
+          is_renter?: boolean
           member_number?: string
           notes?: string | null
           phone?: string | null
+          service_types?: string[]
           status?: Database["public"]["Enums"]["member_status"]
+          street?: string | null
+          street_number?: string | null
           tenant_id?: string
           updated_at?: string
           user_id?: string | null
